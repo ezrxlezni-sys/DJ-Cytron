@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Radio Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: "Helvetica", sans-serif;
+      background: #000;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    #bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      filter: grayscale(100%);
+      z-index: -1;
+    }
+
+    .container {
+      text-align: center;
+      padding: 40px 20px;
+      position: relative;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      animation: fadeIn 1s ease-in;
+    }
+
+    .status {
+      font-size: 1em;
+      color: #aaa;
+      margin-bottom: 10px;
+      animation: fadeIn 1.2s ease-in;
+    }
+
+    .note {
+      font-size: 0.9em;
+      color: #888;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+
+    .now-playing-container {
+      margin: 30px 0 20px;
+      animation: slideIn 0.6s ease-out;
+    }
+
+    .now-playing-logo {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      border-radius: 12px;
+      background: #111;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .now-playing-title {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #ccc;
+    }
+
+    .stop-button {
+      background: #ff3b3b;
+      color: white;
+      border: none;
+      padding: 10px 25px;
+      font-size: 16px;
+      margin-top: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+    }
+
+    .stop-button:hover {
+      background: #e62e2e;
+      transform: scale(1.05);
+    }
+
+    .play-button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 25px;
+      font-size: 16px;
+      margin-top: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+    }
+
+    .play-button:hover {
+      background: #45a049;
+      transform: scale(1.05);
+    }
+
+    .carousel {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 40px;
+    }
+
+    .station-card {
+      width: 150px;
+      background: #222;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+      transition: transform 0.3s;
+      cursor: pointer;
+    }
+
+    .station-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .station-logo {
+      width: 100%;
+      height: 100px;
+      object-fit: contain;
+      background: #111;
+      padding: 10px;
+    }
+
+    .station-card form {
+      margin: 0;
+    }
+
+    .station-card button {
+      width: 100%;
+      padding: 10px 0;
+      background: #444;
+      color: white;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      border-top: 1px solid #333;
+    }
+
+    .station-card button:hover {
+      background: #555;
+    }
+
+    #loader {
+      display: none;
+      margin-top: 20px;
+      color: #ccc;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateY(50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <video id="bg-video" autoplay muted loop>
+    <source src="https://videos.pexels.com/video-files/15196747/15196747-uhd_2560_1440_30fps.mp4" type="video/mp4" />
+  </video>
+
+  <div class="container">
+    <h1>🎙️ RADIO CONTROL</h1>
+    <div class="status">
+      Radio: <strong id="radioStatus">{{ 'Playing' if status else 'Stopped' }}</strong>
+    </div>
+    <p class="status">
+      Network: <strong id="pingStatus">Loading...</strong>
+
+    <div class="now-playing-container" id="nowPlayingContainer">
+      {% if current %}
+        {% if current == "Hitz FM" %}
+          <img src="https://media2.fishtank.my/app_themes/hitz/assets/images/logo-hitz.svg" alt="Hitz FM" class="now-playing-logo" />
+        {% elif current == "MIX FM" %}
+          <img src="https://media2.fishtank.my/app_themes/mix/assets/images/logo-mix.svg" alt="MIX FM" class="now-playing-logo" />
+        {% elif current == "MY FM" %}
+          <img src="https://media2.fishtank.my/app_themes/my/assets/images/logo-my.svg" alt="MY FM" class="now-playing-logo" />
+        {% endif %}
+        <p class="now-playing-title">Now Playing: {{ current }}</p>
+
+        {% if status %}
+          <form action="/stop" method="get">
+            <button type="submit" class="stop-button">⏹ Stop</button>
+          </form>
+        {% else %}
+          <form action="/play" method="post">
+            <input type="hidden" name="station" value="{{ current }}">
+            <button type="submit" class="play-button">▶ Play</button>
+          </form>
+        {% endif %}
+
+      {% else %}
+        <p class="now-playing-title">No station is currently playing</p>
+      {% endif %}
+    </div>
+
+    <h3>Choose your favourite radio</h3>
+    <div class="carousel">
+      {% for name, url in streams.items() %}
+        <div class="station-card" onclick="this.querySelector('form').submit()">
+          <form action="/play" method="post">
+            <input type="hidden" name="station" value="{{ name }}">
+            {% if name == "Hitz FM" %}
+              <img src="https://media2.fishtank.my/app_themes/hitz/assets/images/logo-hitz.svg" alt="Hitz FM" class="station-logo" />
+            {% elif name == "MIX FM" %}
+              <img src="https://media2.fishtank.my/app_themes/mix/assets/images/logo-mix.svg" alt="MIX FM" class="station-logo" />
+            {% elif name == "MY FM" %}
+              <img src="https://media2.fishtank.my/app_themes/my/assets/images/logo-my.svg" alt="MY FM" class="station-logo" />
+            {% endif %}
+            <button type="submit">{{ name }}</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div id="loader">Loading...</div>
+  </div>
+
+  <script>
+    const forms = document.querySelectorAll("form");
+    const loader = document.getElementById("loader");
+
+    forms.forEach(form => {
+      form.addEventListener("submit", () => {
+        loader.style.display = "block";
+      });
+    });
+
+    // Poll every 5s to update UI if radio state changes
+    setInterval(() => {
+      fetch("/status")
+        .then(response => response.json())
+        .then(data => {
+          const statusEl = document.getElementById("radioStatus");
+          if (data.status) {
+            statusEl.textContent = "Playing";
+          } else {
+            statusEl.textContent = "Stopped";
+          }
+
+          // Reload page if station changes
+          if (data.current !== "{{ current }}") {
+            window.location.reload();
+          }
+        });
+    }, 5000);
+
+    // Add ping monitoring
+    function updatePing() {
+      fetch("/ping")
+        .then(response => response.json())
+        .then(data => {
+          const el = document.getElementById("pingStatus");
+          if (data.ping === null) {
+            el.textContent = "Offline";
+            el.style.color = "red";
+          } else {
+            const ping = data.ping.toFixed(0);
+            el.textContent = `${ping} ms`;
+            if (ping < 50) {
+              el.style.color = "limegreen";
+            } else if (ping < 150) {
+              el.style.color = "yellow";
+            } else {
+              el.style.color = "red";
+            }
+          }
+        });
+    }
+
+    // Call every 5 seconds
+    setInterval(updatePing, 5000);
+    updatePing();
+  </script>
+
+</body>
+</html>
