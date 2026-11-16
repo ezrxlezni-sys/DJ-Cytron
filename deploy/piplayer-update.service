@@ -1,0 +1,11 @@
+[Unit]
+Description=Update yt-dlp and ytmusicapi for Cytron DJ
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=pi
+ExecStart=/home/pi/Documents/pi-player/deploy/update-deps.sh
+# "+" runs as root: restart the player only when a package actually changed
+ExecStartPost=+/bin/sh -c 'f=/home/pi/Documents/pi-player/data/.deps-updated; if [ -f "$f" ]; then rm -f "$f"; systemctl restart piplayer; fi'

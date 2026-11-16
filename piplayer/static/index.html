@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#09090b">
+<title>Cytron DJ</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/static/brand/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/static/brand/favicon-64.png">
+<link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cytron DJ">
+<script>try{var t=localStorage.getItem('cdj-theme');if(t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.classList.add('dark')}catch(e){}</script>
+<link rel="stylesheet" href="/static/css/app.css">
+<link rel="stylesheet" href="/static/css/music.css">
+</head>
+<body class="np-idle">
+<div id="app">
+
+  <!-- Desktop sidebar -->
+  <aside id="side">
+    <div class="brand">
+      <img class="brand-logo" src="/static/brand/logo-128.png" srcset="/static/brand/logo-128.png 1x, /static/brand/logo-512.png 4x" width="32" height="32" alt="Cytron">
+      <span class="brand-name">Cytron <b>DJ</b></span>
+      <button class="btn ghost icon sm theme" aria-label="Toggle theme" title="Toggle theme"></button>
+    </div>
+    <div class="group-label">Library</div>
+    <nav class="nav" aria-label="Sections">
+      <button data-tab="radio" class="on"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M16.247 7.761a6 6 0 0 1 0 8.478m2.828-11.306a10 10 0 0 1 0 14.134m-14.15 0a10 10 0 0 1 0-14.134m2.828 11.306a6 6 0 0 1 0-8.478"/><circle cx="12" cy="12" r="2"/></g></svg><span>Radio</span><em class="count" id="c-radio"></em></button>
+      <button data-tab="music"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></g></svg><span>Music</span></button>
+      <button data-tab="queue"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M16 5H3m8 7H3m8 7H3m18-3V5"/><circle cx="18" cy="16" r="3"/></g></svg><span>Queue</span><em class="count" id="c-queue"></em></button>
+      <button data-tab="rooms"><svg viewBox="0 0 32 32" fill="currentColor"><path d="M9 4C6.8 4 5 5.8 5 8c0 1.113.477 2.117 1.219 2.844A5.04 5.04 0 0 0 4 15v5.625l2 1V28h6v-6.375l2-1V15a5.04 5.04 0 0 0-2.219-4.156C12.523 10.117 13 9.114 13 8c0-2.2-1.8-4-4-4m13 0c-2.2 0-4 1.8-4 4c0 1.152.523 2.176 1.313 2.906a4.62 4.62 0 0 0-1.782 2.906v.032l-1.5 7.969l-.25 1.187H19v5h6v-5h3.219l-.25-1.188l-1.5-7.968v-.031a4.62 4.62 0 0 0-1.782-2.907C25.477 10.176 26 9.152 26 8c0-2.2-1.8-4-4-4M9 6c1.117 0 2 .883 2 2s-.883 2-2 2s-2-.883-2-2s.883-2 2-2m13 0c1.117 0 2 .883 2 2s-.883 2-2 2s-2-.883-2-2s.883-2 2-2M9 12a3 3 0 0 1 3 3v4.375l-2 1V26H8v-5.625l-2-1V15a3 3 0 0 1 3-3m13 0c1.23 0 2.277.816 2.5 2.156v.031h.031L25.813 21H23v5h-2v-5h-2.813l1.282-6.813h.031v-.03C19.723 12.816 20.77 12 22 12"/></svg><span>Restrooms</span></button>
+    </nav>
+    <div class="group-label">Platforms</div>
+    <nav class="nav" aria-label="Platforms">
+      <button data-tab="ytm"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ff0033"/><circle cx="12" cy="12" r="6" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M10.2 9v6l5-3Z" fill="#fff"/></svg><span>YouTube Music</span></button>
+      <button data-tab="yt"><svg viewBox="0 0 24 24"><rect x="1.5" y="5" width="21" height="14" rx="4.5" fill="#ff0000"/><path d="M10 9.2v5.6l5-2.8Z" fill="#fff"/></svg><span>YouTube</span></button>
+      <button data-tab="sc"><svg viewBox="0 0 24 24"><g fill="#ff5500"><rect x="1.6" y="12.5" width="1.4" height="5" rx=".7"/><rect x="4" y="10.8" width="1.4" height="6.7" rx=".7"/><path d="M17.6 9.2a4.6 4.6 0 0 0-4.4 3.3A3 3 0 0 0 8 14.6V18h9.6a4.4 4.4 0 0 0 0-8.8Z"/></g></svg><span>SoundCloud</span></button>
+    </nav>
+    <div class="group-label">System</div>
+    <nav class="nav" aria-label="System">
+      <button data-tab="settings"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0a2.34 2.34 0 0 0 3.319 1.915a2.34 2.34 0 0 1 2.33 4.033a2.34 2.34 0 0 0 0 3.831a2.34 2.34 0 0 1-2.33 4.033a2.34 2.34 0 0 0-3.319 1.915a2.34 2.34 0 0 1-4.659 0a2.34 2.34 0 0 0-3.32-1.915a2.34 2.34 0 0 1-2.33-4.033a2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></g></svg><span>Settings</span></button>
+    </nav>
+    <div class="side-foot">
+      <button class="power" data-power="reboot"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></g></svg><span>Reboot</span></button>
+      <button class="power danger" data-power="shutdown"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v10m6.4-5.4a9 9 0 1 1-12.77.04"/></svg><span>Shut down</span></button>
+    </div>
+  </aside>
+
+  <!-- Mobile top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-logo" src="/static/brand/logo-128.png" srcset="/static/brand/logo-128.png 1x, /static/brand/logo-512.png 4x" width="32" height="32" alt="Cytron">
+      <span class="brand-name">Cytron <b>DJ</b></span>
+    </div>
+    <button class="btn ghost icon theme" aria-label="Toggle theme"></button>
+  </header>
+
+  <!-- Content -->
+  <main>
+    <section id="radio" class="pane on">
+      <header class="pane-head">
+        <div><h1>Radio</h1><p>Live stations streaming from your Pi.</p></div>
+        <div class="actions menu-wrap">
+          <div class="st-search">
+            <svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></g></svg>
+            <input id="stsearch" type="search" placeholder="Search stations" aria-label="Search stations" autocomplete="off" spellcheck="false">
+            <button type="button" id="stclear" aria-label="Clear search" hidden><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.5" d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="view-seg" id="viewseg" role="group" aria-label="Station layout">
+            <button type="button" data-view="grid" aria-label="Grid view" title="Grid view"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></g></svg></button>
+            <button type="button" data-view="list" aria-label="List view" title="List view"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+          </div>
+          <button class="btn outline icon" id="moremenu" aria-label="Station options" aria-haspopup="menu" aria-expanded="false" title="Options"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></g></svg></button>
+          <div class="menu" id="radiomenu" role="menu" hidden>
+            <button class="menu-item" id="addbtn" role="menuitem"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7-7v14"/></svg><span>Add station</span></button>
+            <button class="menu-item" id="editbtn" role="menuitem"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497zM15 5l4 4"/></svg><span>Edit stations</span></button>
+          </div>
+        </div>
+      </header>
+      <div class="grid" id="stations"></div>
+      <p class="st-none" id="stnone" hidden>No stations match your search.</p>
+    </section>
+
+    <!-- Music: home + one page per platform. music.js builds the contents on first visit. -->
+    <section id="music" class="pane"></section>
+    <section id="ytm" class="pane"></section>
+    <section id="yt" class="pane"></section>
+    <section id="sc" class="pane"></section>
+
+    <section id="queue" class="pane">
+      <header class="pane-head"><div><h1>Queue</h1><p id="qsub">Up next.</p></div>
+        <div class="actions menu-wrap-row">
+          <div class="qbar">
+            <div class="seg" role="tablist" aria-label="Queue or playlists">
+              <button role="tab" id="segq" class="on">Up next<em id="c-queue2"></em></button>
+              <button role="tab" id="segp">Playlists<em id="c-playlists"></em></button>
+            </div>
+            <div class="st-search" id="qfilterbox">
+              <svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></g></svg>
+              <input id="qfilter" type="search" placeholder="Filter queue" aria-label="Filter queue" autocomplete="off" spellcheck="false">
+              <button type="button" id="qclr" aria-label="Clear filter" hidden><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.5" d="M6 6l12 12M18 6 6 18"/></svg></button>
+            </div>
+          </div><div class="menu-wrap" id="qmenuwrap">
+          <button class="btn outline icon" id="qmore" aria-label="Queue options" aria-haspopup="menu" aria-expanded="false" title="Options"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></g></svg></button>
+          <div class="menu" id="qmenu" role="menu" hidden>
+            <button class="menu-item" id="plnew" role="menuitem" hidden><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7-7v14"/></svg><span>New playlist</span></button>
+            <button class="menu-item" id="qsave" role="menuitem"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/></g></svg><span>Save as playlist</span></button>
+            <button class="menu-item" id="qclearnext" role="menuitem"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11v6m4-6v6m5-11v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>Clear up next</span></button>
+            <button class="menu-item danger" id="qclearall" role="menuitem"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6L6 18M6 6l12 12"/></svg><span>Clear all &amp; stop</span></button>
+          </div>
+        </div></div></header>
+      <div id="qlist"></div>
+      <p class="st-none" id="qnone" hidden>No tracks match your filter.</p>
+      <div id="pllist" hidden></div>
+    </section>
+
+    <section id="rooms" class="pane">
+      <header class="pane-head"><div><h1>Restrooms</h1><p>Live occupancy from the door sensors.</p></div></header>
+      <div class="rooms" id="roomlist"></div>
+
+    </section>
+
+    <section id="settings" class="pane">
+      <header class="pane-head"><div><h1>Settings</h1><p>Restroom door sensors. Reed switch between each GPIO pin and GND.</p></div><span class="badge" id="gpiostate"></span></header>
+      <div class="scard">
+        <div class="form-err" id="gpioerr" hidden></div>
+
+        <form class="sform" id="doorform" autocomplete="off">
+          <div class="sgroup">
+            <div class="slabel">Sensors</div>
+            <label class="srow"><span class="srow-text"><b>Male door</b><small>GPIO pin (BCM)</small></span>
+              <input class="input pin" name="male" type="number" min="2" max="27" inputmode="numeric" placeholder="12" aria-label="Male door pin"></label>
+            <label class="srow"><span class="srow-text"><b>Female door</b><small>GPIO pin (BCM)</small></span>
+              <input class="input pin" name="female" type="number" min="2" max="27" inputmode="numeric" placeholder="13" aria-label="Female door pin"></label>
+          </div>
+
+          <div class="sgroup">
+            <div class="slabel">Automation</div>
+            <label class="srow"><span class="srow-text"><b>Play the queue while in use</b><small>Plays while at least one door is closed. Pauses when both are open and resumes when one closes.</small></span>
+              <input type="checkbox" name="autoplay" role="switch"></label>
+            <div class="srow srow-hours" id="hoursrow" role="group" aria-label="Active hours"><span class="srow-text"><b>Active hours</b><small>Only play inside this window.</small></span>
+              <div class="hours"><select name="from" aria-label="From"></select><em>to</em><select name="to" aria-label="Until"></select></div></div>
+            <div class="srow srow-hours" id="faderow" role="group" aria-label="Fade in"><span class="srow-text"><b>Fade in</b><small>When a door closing starts or resumes the music, raise the volume gradually instead of all at once.</small></span>
+              <div class="hours"><select name="fade" aria-label="Fade-in time"></select></div></div>
+            <div class="srow srow-hours" id="fadeoutrow" role="group" aria-label="Fade out"><span class="srow-text"><b>Fade out</b><small>When the last door opens, lower the volume gradually before pausing. The reminder is spoken afterwards.</small></span>
+              <div class="hours"><select name="fadeout" aria-label="Fade-out time"></select></div></div>
+          </div>
+
+          <div class="sgroup" id="announcegroup">
+            <div class="slabel">Announcements</div>
+            <div class="form-err" id="speecherr" hidden>Spoken messages need a voice on the Pi: <code>pip install piper-tts</code> (see the door-sensors guide) or <code>sudo apt install espeak-ng</code></div>
+            <label class="srow"><span class="srow-text"><b>Speak at the doors</b><small>A welcome when a door closes and a reminder when it opens. Only during the active hours. The music dips while a message plays, and a welcome plays before the music starts.</small></span>
+              <input type="checkbox" name="announce" role="switch"></label>
+            <div class="srow srow-hours" id="voicerow" role="group" aria-label="Voice"><span class="srow-text"><b>Voice</b><small>Who reads the messages. Natural voices need Piper; changing it prepares the messages again.</small></span>
+              <div class="hours"><select name="voice" aria-label="Voice"></select></div></div>
+            <div class="srow srow-hours" id="duckrow" role="group" aria-label="Music level during a message"><span class="srow-text"><b>Music during a message</b><small>How loud the music stays while a message is spoken over it.</small></span>
+              <div class="hours"><select name="duck" aria-label="Music level during a message"></select></div></div>
+            <div class="srow srow-hours" id="risesrow" role="group" aria-label="Music return time"><span class="srow-text"><b>Music comes back</b><small>How long the music takes to return to full volume after a message.</small></span>
+              <div class="hours"><select name="rise" aria-label="Music return time"></select></div></div>
+            <div class="srow srow-msg srow-hours" id="welcomerow"><span class="srow-text"><b>Welcome</b><small>Said when a door closes. Leave empty for none.</small></span>
+              <div class="msg"><input class="input" name="welcome" type="text" maxlength="160" autocomplete="off" aria-label="Welcome message">
+                <button class="btn outline sm icon" type="button" data-say="welcome" aria-label="Play the welcome message" title="Play"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11.04-6.86a1 1 0 0 0 0-1.72L9.5 4.28A1 1 0 0 0 8 5.14Z"/></svg></button></div></div>
+            <div class="srow srow-msg srow-hours" id="reminderrow"><span class="srow-text"><b>Reminder</b><small>Said when a door opens. Leave empty for none.</small></span>
+              <div class="msg"><input class="input" name="reminder" type="text" maxlength="160" autocomplete="off" aria-label="Reminder message">
+                <button class="btn outline sm icon" type="button" data-say="reminder" aria-label="Play the reminder message" title="Play"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11.04-6.86a1 1 0 0 0 0-1.72L9.5 4.28A1 1 0 0 0 8 5.14Z"/></svg></button></div></div>
+          </div>
+
+          <div class="form-err" id="doorerr" hidden></div>
+          <button type="submit" hidden>Save</button>
+        </form>
+
+        <div class="sgroup" id="datapanel">
+          <div class="slabel">Data</div>
+          <div class="srow"><span class="srow-text"><b>Clear history</b><small>Forgets what was played on this Pi and your recent searches in this browser. Suggestions start again from the trending chart.</small></span>
+            <button class="btn outline sm danger-btn" type="button" id="clearhist">Clear history</button></div>
+        </div>
+
+        <div class="sgroup" id="syspanel">
+          <div class="slabel">System</div>
+          <div class="srow"><span class="srow-text"><b>Reboot</b><small>Restarts the Pi. Playback stops for about a minute.</small></span>
+            <button class="btn outline sm" type="button" data-power="reboot">Reboot</button></div>
+          <div class="srow"><span class="srow-text"><b>Shut down</b><small>Powers off. You switch it back on by hand.</small></span>
+            <button class="btn outline sm danger-btn" type="button" data-power="shutdown">Shut down</button></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Now playing: right panel on desktop, mini-player + sheet on mobile -->
+  <div id="scrim" aria-hidden="true"></div>
+  <aside id="player" aria-label="Now playing">
+    <div class="mini" id="mini">
+      <div class="progress" aria-hidden="true"><i id="mprog"></i></div>
+      <div class="np-art"></div>
+      <div class="np-meta"><div class="np-title">Nothing playing</div><div class="np-sub"></div></div>
+      <button class="btn icon round pp" aria-label="Play/Pause"></button>
+    </div>
+
+    <div class="full">
+      <div class="ph-head">
+        <div class="ph-left"><button class="btn ghost icon sheet-close" id="close" aria-label="Collapse player"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9l6 6l6-6"/></svg></button><span class="label">Now playing</span></div>
+        <span class="badge" id="state">Idle</span>
+      </div>
+
+      <div class="np-art big"></div>
+
+      <div class="np-meta big">
+        <div class="np-title">Nothing playing</div>
+        <div class="np-sub"></div>
+      </div>
+
+      <div class="seek" id="seek">
+        <input type="range" id="sr" min="0" max="100" value="0" aria-label="Seek">
+        <div class="times"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+      </div>
+
+      <div class="controls">
+        <div class="btns">
+          <button class="btn ghost icon round ctl-toggle" id="shuffle" aria-label="Shuffle" aria-pressed="false" title="Shuffle"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m18 14l4 4l-4 4m0-20l4 4l-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22M2 6h1.972a4 4 0 0 1 3.6 2.2M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/></g></svg></button>
+          <button class="btn ghost icon lg round" id="prev" aria-label="Previous"><svg viewBox="0 0 24 24"><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.971 4.285A2 2 0 0 1 21 6v12a2 2 0 0 1-3.029 1.715l-9.997-5.998a2 2 0 0 1-.003-3.432zM3 20V4"/></svg></button>
+          <button class="btn icon xl round pp" aria-label="Play/Pause"></button>
+          <button class="btn ghost icon lg round" id="next" aria-label="Next"><svg viewBox="0 0 24 24"><path fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 4v16M6.029 4.285A2 2 0 0 0 3 6v12a2 2 0 0 0 3.029 1.715l9.997-5.998a2 2 0 0 0 .003-3.432z"/></svg></button>
+          <button class="btn ghost icon round ctl-toggle" id="repeat" aria-label="Repeat" aria-pressed="false" title="Repeat: off"></button>
+        </div>
+
+        <div class="vol">
+          <button class="btn ghost icon sm muted" id="mute" aria-label="Mute"></button>
+          <input type="range" id="vr" min="0" max="100" aria-label="Volume">
+          <span id="vv">0</span>
+          <i class="vol-sep" aria-hidden="true"></i>
+          <button class="btn ghost icon sm muted stopbtn" id="stop" aria-label="Stop playback" title="Stop playback"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" rx="2"/></svg></button>
+        </div>
+      </div>
+
+      <label class="switch-row listen" id="listenrow">
+        <span><b>Listen on this device</b></span>
+        <input type="checkbox" id="listen" role="switch">
+      </label>
+
+      <button class="upnext" id="upnext" hidden>
+        <span class="label">Up next</span>
+        <span class="un-row"><span class="np-art un-art"></span><span class="np-meta"><span class="np-title" id="untitle"></span><span class="np-sub" id="unsub"></span></span></span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Mobile tab bar -->
+  <nav id="tabbar" class="nav" aria-label="Sections">
+    <button data-tab="radio" class="on"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M16.247 7.761a6 6 0 0 1 0 8.478m2.828-11.306a10 10 0 0 1 0 14.134m-14.15 0a10 10 0 0 1 0-14.134m2.828 11.306a6 6 0 0 1 0-8.478"/><circle cx="12" cy="12" r="2"/></g></svg><span>Radio</span></button>
+    <button data-tab="music"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></g></svg><span>Music</span></button>
+    <button data-tab="queue"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M16 5H3m8 7H3m8 7H3m18-3V5"/><circle cx="18" cy="16" r="3"/></g></svg><span>Queue</span></button>
+    <button data-tab="rooms"><svg viewBox="0 0 32 32" fill="currentColor"><path d="M9 4C6.8 4 5 5.8 5 8c0 1.113.477 2.117 1.219 2.844A5.04 5.04 0 0 0 4 15v5.625l2 1V28h6v-6.375l2-1V15a5.04 5.04 0 0 0-2.219-4.156C12.523 10.117 13 9.114 13 8c0-2.2-1.8-4-4-4m13 0c-2.2 0-4 1.8-4 4c0 1.152.523 2.176 1.313 2.906a4.62 4.62 0 0 0-1.782 2.906v.032l-1.5 7.969l-.25 1.187H19v5h6v-5h3.219l-.25-1.188l-1.5-7.968v-.031a4.62 4.62 0 0 0-1.782-2.907C25.477 10.176 26 9.152 26 8c0-2.2-1.8-4-4-4M9 6c1.117 0 2 .883 2 2s-.883 2-2 2s-2-.883-2-2s.883-2 2-2m13 0c1.117 0 2 .883 2 2s-.883 2-2 2s-2-.883-2-2s.883-2 2-2M9 12a3 3 0 0 1 3 3v4.375l-2 1V26H8v-5.625l-2-1V15a3 3 0 0 1 3-3m13 0c1.23 0 2.277.816 2.5 2.156v.031h.031L25.813 21H23v5h-2v-5h-2.813l1.282-6.813h.031v-.03C19.723 12.816 20.77 12 22 12"/></svg><span>Restrooms</span></button>
+    <button data-tab="settings"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0a2.34 2.34 0 0 0 3.319 1.915a2.34 2.34 0 0 1 2.33 4.033a2.34 2.34 0 0 0 0 3.831a2.34 2.34 0 0 1-2.33 4.033a2.34 2.34 0 0 0-3.319 1.915a2.34 2.34 0 0 1-4.659 0a2.34 2.34 0 0 0-3.32-1.915a2.34 2.34 0 0 1-2.33-4.033a2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></g></svg><span>Settings</span></button>
+  </nav>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlgtitle">
+  <form id="addst" method="dialog">
+    <button type="button" class="btn ghost icon sm dlg-x" id="dlgx" aria-label="Close"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <div>
+      <h2 id="dlgtitle">Add station</h2>
+    </div>
+    <p>Paste a direct stream URL (mp3, aac or m3u8).</p>
+    <label class="field">Name<input class="input" name="title" placeholder="e.g. Hitz FM" required autocomplete="off"></label>
+    <label class="field">Stream URL<input class="input" name="url" type="url" placeholder="https://…" required autocomplete="off"></label>
+    <div class="form-err" id="adderr" hidden></div>
+    <div class="dlg-foot">
+      <button type="button" class="btn destructive" id="rmbtn" hidden>Remove</button>
+      <button type="button" class="btn outline" id="cancel">Cancel</button>
+      <button class="btn" type="submit" id="savebtn">Add station</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="pdlg" aria-labelledby="pdlgtitle">
+  <form method="dialog">
+    <div><h2 id="pdlgtitle">Shut down?</h2></div>
+    <p id="pdlgmsg"></p>
+    <div class="dlg-foot">
+      <button type="button" class="btn outline" id="pcancel">Cancel</button>
+      <button type="button" class="btn destructive" id="pgo">Shut down</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="pldlg" aria-labelledby="pldlgtitle">
+  <form id="plform" method="dialog">
+    <div><h2 id="pldlgtitle">New playlist</h2></div>
+    <label class="field">Name<input class="input" name="name" placeholder="e.g. Morning mix" maxlength="80" required autocomplete="off"></label>
+    <div class="dlg-foot">
+      <button type="button" class="btn outline" id="plcancel">Cancel</button>
+      <button class="btn" type="submit" id="plsave">Create</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="pickdlg" aria-labelledby="pickdlgtitle">
+  <form id="pickform" method="dialog">
+    <div><h2 id="pickdlgtitle">Add to playlist</h2></div>
+    <p id="pickdesc"></p>
+    <div id="pickopts" class="pick-opts"></div>
+    <label class="field">New playlist<input class="input" name="name" placeholder="Name a new playlist" maxlength="80" autocomplete="off"></label>
+    <div class="dlg-foot">
+      <button type="button" class="btn outline" id="pickcancel">Cancel</button>
+      <button class="btn" type="submit">Create &amp; add</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" role="status"></div>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/music.js"></script>
+</body>
+</html>

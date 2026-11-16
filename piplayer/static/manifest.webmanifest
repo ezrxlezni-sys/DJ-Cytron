@@ -1,0 +1,15 @@
+{
+  "name": "Cytron DJ",
+  "short_name": "Cytron DJ",
+  "description": "Control radio and YouTube Music on your Pi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#0fa6dd",
+  "icons": [
+    {"src": "/static/brand/logo-128.png", "sizes": "128x128", "type": "image/png"},
+    {"src": "/static/brand/logo-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "/static/brand/apple-touch-icon.png", "sizes": "180x180", "type": "image/png"}
+  ]
+}

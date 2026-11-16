@@ -1,0 +1,491 @@
+[
+  {
+    "id": "hitz-fm",
+    "title": "Hitz FM",
+    "category": "Popular",
+    "url": "https://stream.rcs.revma.com/488kt4sbv4uvv",
+    "thumb": "/static/logos/hitz-fm.png"
+  },
+  {
+    "id": "mix-fm",
+    "title": "MIX FM",
+    "category": "Popular",
+    "url": "https://stream.rcs.revma.com/v5pq3htbv4uvv",
+    "thumb": "/static/logos/mix-fm.png"
+  },
+  {
+    "id": "my-fm",
+    "title": "MY FM",
+    "category": "Popular",
+    "url": "https://stream.rcs.revma.com/hc3unrtbv4uvv",
+    "thumb": "/static/logos/my-fm.png"
+  },
+  {
+    "id": "sinar-fm",
+    "title": "Sinar FM",
+    "category": "Popular",
+    "url": "https://stream.rcs.revma.com/azatk0tbv4uvv",
+    "thumb": "/static/logos/sinar-fm.png"
+  },
+  {
+    "id": "melody-fm",
+    "title": "Melody FM",
+    "category": "Popular",
+    "url": "https://stream.rcs.revma.com/2u1n6dtbv4uvv",
+    "thumb": "/static/logos/melody-fm.png"
+  },
+  {
+    "id": "hot-fm",
+    "title": "Hot FM",
+    "category": "Popular",
+    "url": "https://stream.rcs.revma.com/drakdf8mtd3vv",
+    "thumb": "/static/logos/hot-fm.png"
+  },
+  {
+    "id": "fly-fm",
+    "title": "Fly FM",
+    "category": "Popular",
+    "url": "https://stream.rcs.revma.com/q17aka9mtd3vv",
+    "thumb": "/static/logos/fly-fm.png"
+  },
+  {
+    "id": "lite-fm",
+    "title": "LITE FM",
+    "category": "Popular",
+    "url": "https://stream.rcs.revma.com/bn4ex8sbv4uvv",
+    "thumb": "/static/logos/lite-fm.png"
+  },
+  {
+    "id": "kool-fm",
+    "title": "Kool FM",
+    "category": "Popular",
+    "url": "https://stream.rcs.revma.com/3930238mtd3vv",
+    "thumb": "/static/logos/kool-fm.png"
+  },
+  {
+    "id": "nasional-fm",
+    "title": "Nasional FM",
+    "category": "Popular",
+    "url": "http://playerservices.streamtheworld.com/api/livestream-redirect/NASIONAL_FM.mp3",
+    "thumb": "/static/logos/nasional-fm.png"
+  },
+  {
+    "id": "eight-fm",
+    "title": "Eight FM",
+    "category": "Chinese",
+    "url": "https://stream.rcs.revma.com/qp0xrd9mtd3vv",
+    "thumb": "/static/logos/eight-fm.png"
+  },
+  {
+    "id": "988-fm",
+    "title": "988 FM",
+    "category": "Chinese",
+    "url": "https://28103.live.streamtheworld.com/988_FMAAC.aac",
+    "thumb": "/static/logos/988-fm.png"
+  },
+  {
+    "id": "goxuan",
+    "title": "goXuan",
+    "category": "Chinese",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/RAKITAAAC.aac",
+    "thumb": "/static/logos/goxuan.png"
+  },
+  {
+    "id": "afo-radio-chinese",
+    "title": "AFO Radio Chinese",
+    "category": "Chinese",
+    "url": "https://stream.rcs.revma.com/7x3gv2y4bshvv",
+    "thumb": "/static/logos/afo-radio-chinese.png"
+  },
+  {
+    "id": "ai-fm",
+    "title": "ai FM",
+    "category": "Chinese",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/AI_FMAAC_SC",
+    "thumb": "/static/logos/ai-fm.png"
+  },
+  {
+    "id": "cityplus-fm",
+    "title": "CITYPlus FM",
+    "category": "Chinese",
+    "url": "https://stream.rcs.revma.com/9ykdmcawe1bwv",
+    "thumb": "/static/logos/cityplus-fm.png"
+  },
+  {
+    "id": "bfm-89-9",
+    "title": "BFM 89.9",
+    "category": "English & Talk",
+    "url": "https://22253.live.streamtheworld.com/BFM_SC",
+    "thumb": "/static/logos/bfm-89-9.png"
+  },
+  {
+    "id": "traxx-fm",
+    "title": "Traxx FM",
+    "category": "English & Talk",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/TRAXX_FMAAC_SC",
+    "thumb": "/static/logos/traxx-fm.png"
+  },
+  {
+    "id": "cats-fm",
+    "title": "Cats FM",
+    "category": "English & Talk",
+    "url": "https://stream.rcs.revma.com/51qe53rv0y3vv.m4a",
+    "thumb": "/static/logos/cats-fm.png"
+  },
+  {
+    "id": "afo-radio-english",
+    "title": "AFO Radio English",
+    "category": "English & Talk",
+    "url": "https://stream.rcs.revma.com/8150ezy4bshvv",
+    "thumb": "/static/logos/afo-radio-english.png"
+  },
+  {
+    "id": "thr-raaga",
+    "title": "THR Raaga",
+    "category": "Tamil",
+    "url": "https://n06.rcs.revma.com/1ut6qwtbv4uvv",
+    "thumb": "/static/logos/thr-raaga.png"
+  },
+  {
+    "id": "minnal-fm",
+    "title": "Minnal FM",
+    "category": "Tamil",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/MINNAL_FMAAC.aac",
+    "thumb": "/static/logos/minnal-fm.png"
+  },
+  {
+    "id": "jei-fm-klang",
+    "title": "Jei FM Klang",
+    "category": "Tamil",
+    "url": "https://usa3.fastcast4u.com/proxy/jeifm?mp=/1",
+    "thumb": "/static/logos/jei-fm-klang.png"
+  },
+  {
+    "id": "zayan",
+    "title": "Zayan",
+    "category": "Islamic",
+    "url": "https://stream.rcs.revma.com/7ww2a4tbv4uvv"
+  },
+  {
+    "id": "ikimfm",
+    "title": "IKIMfm",
+    "category": "Islamic",
+    "url": "https://stream.rcs.revma.com/kz3pdu9wz2nwv",
+    "thumb": "/static/logos/ikimfm.png"
+  },
+  {
+    "id": "pbn-radio-nurani",
+    "title": "PBN Radio Nurani",
+    "category": "Islamic",
+    "url": "https://stream.zeno.fm/2uyfsr25sm0uv"
+  },
+  {
+    "id": "red-fm",
+    "title": "RED FM",
+    "category": "RTM National",
+    "url": "https://22273.live.streamtheworld.com/RED_FMAAC.aac",
+    "thumb": "/static/logos/red-fm.png"
+  },
+  {
+    "id": "klasik-fm",
+    "title": "Klasik FM",
+    "category": "RTM National",
+    "url": "http://playerservices.streamtheworld.com/api/livestream-redirect/RADIO_KLASIK.mp3",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "asyik-fm",
+    "title": "Asyik FM",
+    "category": "RTM National",
+    "url": "http://playerservices.streamtheworld.com/api/livestream-redirect/ASYIK_FM.mp3",
+    "thumb": "/static/logos/asyik-fm.png"
+  },
+  {
+    "id": "kedah-fm",
+    "title": "Kedah FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/KEDAH_FMAAC.aac",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "perlis-fm",
+    "title": "Perlis FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/PERLIS_FMAAC.aac",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "perak-fm",
+    "title": "Perak FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/PERAK_FMAAC.aac",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "selangor-fm",
+    "title": "Selangor FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/SELANGOR_FMAAC.aac",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "negeri-fm",
+    "title": "Negeri FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/NEGERI_FMAAC.aac",
+    "thumb": "/static/logos/negeri-fm.png"
+  },
+  {
+    "id": "melaka-fm",
+    "title": "Melaka FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/MELAKA_FMAAC.aac",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "johor-fm",
+    "title": "Johor FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/JOHOR_FMAAC.aac",
+    "thumb": "/static/logos/johor-fm.png"
+  },
+  {
+    "id": "pahang-fm",
+    "title": "Pahang FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/PAHANG_FMAAC.aac",
+    "thumb": "/static/logos/pahang-fm.png"
+  },
+  {
+    "id": "kelantan-fm",
+    "title": "Kelantan FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/KELANTAN_FMAAC.aac",
+    "thumb": "/static/logos/kelantan-fm.png"
+  },
+  {
+    "id": "terengganu-fm",
+    "title": "Terengganu FM",
+    "category": "RTM Regional",
+    "url": "https://22243.live.streamtheworld.com/TERENGGANU_FMAAC_SC",
+    "thumb": "/static/logos/terengganu-fm.png"
+  },
+  {
+    "id": "langkawi-fm",
+    "title": "Langkawi FM",
+    "category": "RTM Regional",
+    "url": "http://playerservices.streamtheworld.com/api/livestream-redirect/LANGKAWI_FM.mp3",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "sabah-fm",
+    "title": "Sabah FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/SABAH_FMAAC.aac",
+    "thumb": "/static/logos/sabah-fm.png"
+  },
+  {
+    "id": "keningau-fm",
+    "title": "Keningau FM",
+    "category": "RTM Regional",
+    "url": "http://playerservices.streamtheworld.com/api/livestream-redirect/KENINGAU_FM.mp3",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "tawau-fm",
+    "title": "Tawau FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/TAWAU_FMAAC.aac",
+    "thumb": "/static/logos/tawau-fm.png"
+  },
+  {
+    "id": "sandakan-fm",
+    "title": "Sandakan FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/SANDAKAN_FMAAC.aac",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "labuan-fm",
+    "title": "Labuan FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/LABUAN_FMAAC.aac",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "sarawak-fm",
+    "title": "Sarawak FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/SARAWAK_FMAAC.aac",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "miri-fm",
+    "title": "Miri FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/MIRI_FMAAC.aac",
+    "thumb": "/static/logos/miri-fm.png"
+  },
+  {
+    "id": "sibu-fm",
+    "title": "Sibu FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/SIBU_FMAAC.aac",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "bintulu-fm",
+    "title": "Bintulu FM",
+    "category": "RTM Regional",
+    "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/BINTULU_FMAAC.aac",
+    "thumb": "/static/logos/rtm.png"
+  },
+  {
+    "id": "wai-fm-iban",
+    "title": "Wai FM Iban",
+    "category": "RTM Regional",
+    "url": "http://playerservices.streamtheworld.com/api/livestream-redirect/WAI_FM_IBAN.mp3",
+    "thumb": "/static/logos/wai-fm-iban.png"
+  },
+  {
+    "id": "wai-fm-bidayuh",
+    "title": "Wai FM Bidayuh",
+    "category": "RTM Regional",
+    "url": "http://playerservices.streamtheworld.com/api/livestream-redirect/WAI_FM_BK.mp3",
+    "thumb": "/static/logos/wai-fm-bidayuh.png"
+  },
+  {
+    "id": "slow-rock-90-s",
+    "title": "Slow Rock 90's",
+    "category": "Community & Online",
+    "url": "https://stream.zeno.fm/hiut6cwfoneuv",
+    "thumb": "/static/logos/slow-rock-90-s.png"
+  },
+  {
+    "id": "all-fm-91-9",
+    "title": "ALL FM 91.9",
+    "category": "Community & Online",
+    "url": "https://stream.zeno.fm/srrbpsu3tbdvv",
+    "thumb": "/static/logos/all-fm-91-9.png"
+  },
+  {
+    "id": "amboi-fm",
+    "title": "Amboi FM",
+    "category": "Community & Online",
+    "url": "http://amboifm.iradio.work:8000/stream",
+    "thumb": "/static/logos/amboi-fm.png"
+  },
+  {
+    "id": "gemersik-fm",
+    "title": "Gemersik FM",
+    "category": "Community & Online",
+    "url": "http://gemersikfm.iradio.work:8000/;",
+    "thumb": "/static/logos/gemersik-fm.png"
+  },
+  {
+    "id": "vision-fm",
+    "title": "Vision FM",
+    "category": "Community & Online",
+    "url": "http://cloud.tujuh.my:8018/stream?type=.mp3/",
+    "thumb": "/static/logos/vision-fm.png"
+  },
+  {
+    "id": "alam-seni-fm",
+    "title": "Alam Seni FM",
+    "category": "Community & Online",
+    "url": "http://s1.cmesolution.my:6178/stream.mp3",
+    "thumb": "/static/logos/alam-seni-fm.png"
+  },
+  {
+    "id": "alam-mayafm",
+    "title": "Alam MayaFM",
+    "category": "Community & Online",
+    "url": "http://192.99.8.192:3142/;",
+    "thumb": "/static/logos/alam-mayafm.png"
+  },
+  {
+    "id": "impian-fm",
+    "title": "Impian FM",
+    "category": "Community & Online",
+    "url": "http://167.114.131.90:6156/stream/1/"
+  },
+  {
+    "id": "delima-fm",
+    "title": "Delima FM",
+    "category": "Community & Online",
+    "url": "http://167.114.131.90:5610/;",
+    "thumb": "/static/logos/delima-fm.png"
+  },
+  {
+    "id": "ffm",
+    "title": "FFM (Funker FM)",
+    "category": "Community & Online",
+    "url": "http://167.114.131.90:5968/ffm",
+    "thumb": "/static/logos/ffm.png"
+  },
+  {
+    "id": "rentak-pelangi-muzik-fm",
+    "title": "Rentak Pelangi Muzik FM",
+    "category": "Community & Online",
+    "url": "http://stream.tujuh.my:8006/stream"
+  },
+  {
+    "id": "ltfm-radio",
+    "title": "LTFM Radio",
+    "category": "Community & Online",
+    "url": "http://live.ltfmonline.com:8000/stream"
+  },
+  {
+    "id": "gegar-muzik-fm",
+    "title": "Gegar Muzik FM",
+    "category": "Community & Online",
+    "url": "https://usa3.fastcast4u.com/proxy/gegarmuzikfm?mp=/1",
+    "thumb": "/static/logos/gegar-muzik-fm.png"
+  },
+  {
+    "id": "dunia-muzik-fm",
+    "title": "Dunia Muzik FM",
+    "category": "Community & Online",
+    "url": "http://185.109.169.80:8009/stream"
+  },
+  {
+    "id": "radio-kpkt",
+    "title": "Radio KPKT",
+    "category": "Community & Online",
+    "url": "http://listen.kpkt.gov.my:8000/stream",
+    "thumb": "/static/logos/radio-kpkt.png"
+  },
+  {
+    "id": "mib-radio",
+    "title": "MIB Radio",
+    "category": "Community & Online",
+    "url": "https://stream.zeno.fm/bm557kzmr18uv"
+  },
+  {
+    "id": "tmm2-fm",
+    "title": "TMM2 FM",
+    "category": "Community & Online",
+    "url": "https://stream.zeno.fm/mq0pxfsf0chvv"
+  },
+  {
+    "id": "anastation",
+    "title": "ANAstation",
+    "category": "Community & Online",
+    "url": "https://stream.zeno.fm/tf79rp6qg48uv",
+    "thumb": "/static/logos/anastation.png"
+  },
+  {
+    "id": "fakhrulnoir-fm",
+    "title": "Fakhrulnoir FM",
+    "category": "Community & Online",
+    "url": "https://stream.zeno.fm/z53ycf1iwhnvv",
+    "thumb": "/static/logos/fakhrulnoir-fm.png"
+  },
+  {
+    "id": "repair-segala",
+    "title": "Repair Segala",
+    "category": "Community & Online",
+    "url": "https://stream.zeno.fm/0245ew03ekhvv",
+    "thumb": "/static/logos/repair-segala.png"
+  }
+]

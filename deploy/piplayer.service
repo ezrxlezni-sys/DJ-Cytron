@@ -1,0 +1,32 @@
+[Unit]
+Description=Cytron DJ (radio + YouTube Music)
+After=network-online.target sound.target user@1000.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/Documents/pi-player
+# One worker only: the player (mpv) lives inside the process. Threads serve the browsers (live updates hold one each).
+# Port 80 so the URL is just http://cytrondj.local
+ExecStart=/home/pi/Documents/pi-player/.venv/bin/gunicorn --workers 1 --worker-class gthread --threads 32 \
+  --bind 0.0.0.0:80 --timeout 120 --graceful-timeout 5 piplayer.wsgi:app
+# Restart after a crash AND after a clean-but-unexpected exit
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+# mpv needs the user's PipeWire/PulseAudio session (requires: sudo loginctl enable-linger pi)
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+# lgpio (used by gpiozero) drops its notification pipe in the working directory; keep it out of the project
+Environment=LG_WD=/tmp
+# Bathroom door sensors default to BCM pins male=12,female=13 and are edited in the Settings tab.
+# Uncomment to set the initial pins instead (reed switch to GND):
+# Environment=PIPLAYER_BATHROOM_PINS=male=5,female=6
+# Country for the "trending" chart in Music > Suggested (default MY):
+# Environment=PIPLAYER_CHARTS_COUNTRY=MY
+# Extra hostnames the app may be opened by (it already accepts IPs, localhost, *.local and bare names):
+# Environment=PIPLAYER_ALLOWED_HOSTS=dj.example.com
+
+[Install]
+WantedBy=multi-user.target

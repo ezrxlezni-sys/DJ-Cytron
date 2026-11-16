@@ -1,0 +1,8 @@
+flask~=3.1
+gunicorn~=23.0
+ytmusicapi~=1.12
+# yt-dlp must keep moving: YouTube changes break old versions. deploy/update-deps.sh upgrades it weekly.
+yt-dlp>=2026.10
+# door sensors (system packages, venv needs include-system-site-packages): sudo apt install python3-gpiozero python3-lgpio
+# natural offline voice for the door announcements (also needs a voice file in data/voices, see docs/door-sensors.md)
+piper-tts~=1.8

@@ -1,0 +1,89 @@
+/* ================= Music: home + one page per platform (see js/music.js) ================= */
+#music .pane-head,#ytm .pane-head,#yt .pane-head,#sc .pane-head{align-items:center}
+.m-actions{align-items:center;gap:10px;min-width:0}
+.m-hicon{flex:none;display:grid;place-items:center}
+.m-hicon svg{width:32px;height:32px}
+.m-back{display:none;margin-left:-8px}
+
+/* ---------- search pill ---------- */
+.m-search{display:flex;align-items:center;gap:8px;flex:none;width:340px;min-width:0;height:var(--ch);padding:0 6px 0 14px;border-radius:999px;background:var(--muted);border:1px solid transparent;color:var(--muted-foreground);transition:background .12s,width .18s}
+#music .m-search{width:440px}
+.m-search:focus-within{width:400px;background:var(--accent);color:var(--foreground)}
+#music .m-search:focus-within{width:480px}
+.m-search-icon{flex:none;display:grid;place-items:center}
+.m-search-icon svg{width:16px;height:16px}
+.m-search input{flex:1;min-width:0;height:100%;padding:0;border:0;outline:0;background:transparent;box-shadow:none;color:var(--foreground);font:inherit}
+.m-search input::placeholder{color:var(--muted-foreground)}
+.m-search input::-webkit-search-cancel-button{display:none}
+.m-clear{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:999px;color:var(--muted-foreground)}
+.m-clear[hidden]{display:none}
+.m-clear svg{width:14px;height:14px}
+@media (hover:hover){.m-clear:hover{background:var(--accent);color:var(--foreground)}}
+
+/* ---------- chips (recent searches, "try searching") ---------- */
+.m-chips{display:flex;flex-wrap:wrap;gap:8px}
+.m-chip{height:34px;padding:0 14px;border-radius:999px;background:var(--muted);color:var(--foreground);font-size:13px;font-weight:500;transition:background .12s,transform .12s}
+@media (hover:hover){.m-chip:hover{background:var(--accent)}}
+.m-chip:active{transform:scale(.97)}
+.m-note{margin:12px 0 0;color:var(--muted-foreground);font-size:13px}
+
+/* ---------- platform cards on the home page ---------- */
+.m-platforms{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:28px}
+.m-pcard{display:flex;align-items:center;gap:14px;padding:14px 16px;text-align:left;background:var(--card);color:var(--card-foreground);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-xs);transition:border-color .12s,box-shadow .12s,transform .12s}
+@media (hover:hover){.m-pcard:hover{border-color:var(--input);box-shadow:var(--shadow-sm);transform:translateY(-1px)}}
+.m-pcard:active{transform:scale(.985)}
+.m-pcard-icon{flex:none;display:grid;place-items:center}
+.m-pcard-icon svg{width:36px;height:36px}
+.m-pcard-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.m-pcard-text b{font-weight:600}
+.m-pcard-text span{color:var(--muted-foreground);font-size:12px;line-height:16px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.m-pcard-go{flex:none;color:var(--muted-foreground)}
+.m-pcard-go svg{width:16px;height:16px}
+
+/* ---------- result tabs (home search) ---------- */
+.m-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.m-tab{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px 0 10px;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-size:13px;font-weight:500;transition:background .12s,color .12s}
+.m-tab-icon{display:grid;place-items:center}
+.m-tab-icon svg{width:16px;height:16px}
+.m-tab em{font-style:normal;font-size:12px;opacity:.7;font-variant-numeric:tabular-nums}
+@media (hover:hover){.m-tab[aria-pressed=false]:hover{background:var(--accent);color:var(--foreground)}}
+.m-tab[aria-pressed=true]{background:var(--foreground);color:var(--background)}
+
+/* ---------- cover cards: shelves and the grid view ---------- */
+.m-card{position:relative;min-width:0}
+.m-go{display:block;width:100%;text-align:left;border-radius:var(--r-lg);transition:transform .12s}
+.m-go:active{transform:scale(.985)}
+.m-art{position:relative;aspect-ratio:1;border-radius:var(--r-lg);background:var(--muted);overflow:hidden;display:grid;place-items:center;font-size:28px;font-weight:600;color:var(--muted-foreground);transition:filter .12s,box-shadow .12s}
+.m-art.wide{aspect-ratio:16/9}
+.m-art.logo{background:#fff}
+.m-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .22s ease-out}
+.m-art img.in{opacity:1}
+@media (hover:hover){.m-go:hover .m-art{filter:brightness(1.08)}}
+.m-card.now .m-art{box-shadow:0 0 0 2px color-mix(in srgb,var(--foreground) 65%,transparent)}
+.m-dur{position:absolute;right:6px;bottom:6px;padding:2px 6px;border-radius:6px;background:#000000b3;color:#fff;font-size:11px;line-height:16px;font-weight:500;font-variant-numeric:tabular-nums}
+.m-title{display:block;margin-top:10px;font-size:14px;line-height:20px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-sub{display:block;color:var(--muted-foreground);font-size:12px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-grid.wide .m-title{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.m-add{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:999px;display:grid;place-items:center;background:var(--background);color:var(--foreground);border:1px solid var(--border);box-shadow:var(--shadow-xs);opacity:0;transition:opacity .12s}
+.m-add svg{width:16px;height:16px}
+@media (hover:hover){.m-card:hover .m-add{opacity:1}}
+.m-card:focus-within .m-add{opacity:1}
+@media (hover:none){.m-add{opacity:1}}
+.m-card.sk .m-art{aspect-ratio:1}
+.m-card.sk .m-art.wide{aspect-ratio:16/9}
+
+.m-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:22px 16px}
+.m-grid.wide{grid-template-columns:repeat(auto-fill,minmax(236px,1fr))}
+.m-body>.msec,.m-body>.m-platforms,.m-body>div>.msec{animation:fade-up .24s var(--ease-out) both}
+
+/* ---------- phones: one column header, back button, tighter shelves ---------- */
+@media (max-width:820px),(max-height:500px) and (max-width:1000px) and (orientation:landscape){
+  .m-back{display:grid}
+  #music .pane-head,#ytm .pane-head,#yt .pane-head,#sc .pane-head{flex-wrap:wrap}
+  .m-actions{flex:1 1 100%}
+  .m-search,#music .m-search,.m-search:focus-within,#music .m-search:focus-within{flex:1;width:auto}
+  .m-search input{font-size:16px}
+  .m-platforms{grid-template-columns:1fr}
+  .m-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:18px 12px}
+  .m-grid.wide{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+}

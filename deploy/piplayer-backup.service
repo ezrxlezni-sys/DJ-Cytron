@@ -1,0 +1,7 @@
+[Unit]
+Description=Cytron DJ data backup
+
+[Service]
+Type=oneshot
+User=pi
+ExecStart=/home/pi/Documents/pi-player/deploy/backup.sh
