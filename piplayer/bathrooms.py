@@ -361,7 +361,7 @@ class Bathrooms:
         if which not in ("welcome", "reminder"):
             return "Unknown message"
         if not self._speech_ok():
-            return "Speech needs a voice: pip install piper-tts (see docs/door-sensors.md) or sudo apt install espeak-ng"
+            return "Speech needs a voice: pip install piper-tts (see docs/doors/announcements.md) or sudo apt install espeak-ng"
         text = self._text(which)
         if not text:
             return "That message is empty"

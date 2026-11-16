@@ -18,7 +18,7 @@ Errors are `{"error": "message"}` with an appropriate status code. Every `/api` 
 | POST | [`/api/stations`](#post-apistations) | Add a station |
 | PUT | [`/api/stations/<id>`](#put-apistationsid) | Rename or re-point a station |
 | DELETE | [`/api/stations/<id>`](#delete-apistationsid) | Remove a station |
-| GET | [`/api/search`](#get-apisearch) | Search YouTube Music |
+| GET | [`/api/search`](#get-apisearch) | Search YouTube Music, YouTube or SoundCloud |
 | GET | [`/api/trending`](#get-apitrending) | The country's YouTube Music chart |
 | GET | [`/api/history`](#get-apihistory) | Recently played and mostly played tracks |
 | GET | [`/api/suggested`](#get-apisuggested) | Suggested tracks (related + trending) |
@@ -104,7 +104,7 @@ Returned by `GET /api/state` and pushed on every change by `GET /api/events`.
 | `id` | string | `male` or `female` |
 | `occupied` | bool or null | `true` door closed, `false` door open, `null` no sensor or no reading |
 | `since` | float or null | Unix time (seconds) of the last change |
-| `stale` | bool | Sensor watchdog: no change for 4 h of opening time. See [door-sensors.md](door-sensors.md#sensor-watchdog) |
+| `stale` | bool | Sensor watchdog: no change for 4 h of opening time. See [Door sensor hardware](../doors/hardware.md#sensor-watchdog) |
 
 **`doors`** is the saved configuration plus status:
 
@@ -180,12 +180,12 @@ Add a station.
 
 Returns the **full updated list**. `400` if `title` is empty or `url` does not start with `http://` or `https://`.
 
-### PUT /api/stations/&lt;id&gt;
+### `PUT /api/stations/<id>`
 
 Change a station's `title` and `url` (same body and validation as POST). Returns the full updated list. `404` for
 an unknown id.
 
-### DELETE /api/stations/&lt;id&gt;
+### `DELETE /api/stations/<id>`
 
 Remove a station. Returns the full updated list (also when the id did not exist).
 
@@ -264,7 +264,7 @@ Start playing. Send **one** of:
 `400` (`nothing to play`) if none of these is present. Returns `{"ok": true}` immediately; playback starts
 asynchronously (watch `loading` in the state stream). YouTube items are resolved to a stream URL first, which
 can take a few seconds the first time. A track that cannot be played is skipped; see
-[failure behaviour](deployment.md#what-happens-when-something-fails).
+[failure behaviour](../architecture/player.md#resilience).
 
 ### POST /api/queue
 
@@ -281,12 +281,12 @@ its `index` follows it. Out-of-range indices are ignored. `400` if `from` or `to
 `{"scope": "upcoming"}` (default) removes everything after the current item. `{"scope": "all"}` empties the queue
 and stops playback. Returns `{"ok": true}`.
 
-### DELETE /api/queue/&lt;index&gt;
+### `DELETE /api/queue/<index>`
 
 Remove the item at that position (ignored if out of range). Removing the item that is playing moves on to the
 next one. Returns `{"ok": true}`.
 
-### POST /api/control/&lt;action&gt;
+### `POST /api/control/<action>`
 
 | Action | Body | Effect |
 |---|---|---|
@@ -332,19 +332,19 @@ Returns the array of playlists.
 Create one: `{"name": "Friday", "items": [ ...queue items ]}` (`items` optional). `400` (`name required`) if the name
 is empty. Items that fail [validation](#validation-and-the-request-guard) are dropped.
 
-### PUT /api/playlists/&lt;id&gt;
+### `PUT /api/playlists/<id>`
 
 Rename: `{"name": "New name"}`. `400` if empty, `404` for an unknown id.
 
-### DELETE /api/playlists/&lt;id&gt;
+### `DELETE /api/playlists/<id>`
 
 Delete a playlist (also when the id did not exist).
 
-### POST /api/playlists/&lt;id&gt;/items
+### `POST /api/playlists/<id>/items`
 
 Append songs: `{"items": [ ...queue items ]}`. `404` for an unknown id.
 
-### DELETE /api/playlists/&lt;id&gt;/items/&lt;index&gt;
+### `DELETE /api/playlists/<id>/items/<index>`
 
 Remove the song at that position (ignored if out of range). `404` for an unknown id.
 
@@ -402,13 +402,13 @@ a speech engine is installed and usable).
 
 Play a saved door message on the speakers (the Settings ▶ buttons): `{"which": "welcome"}` or `{"which": "reminder"}`.
 Returns `{"ok": true}` straight away (the message plays in the background), or `400` with `Unknown message`,
-`That message is empty`, or `Speech needs a voice: pip install piper-tts (see docs/door-sensors.md) or sudo apt install espeak-ng`.
+`That message is empty`, or `Speech needs a voice: pip install piper-tts (see docs/doors/announcements.md) or sudo apt install espeak-ng`.
 
 ---
 
 ## System
 
-### POST /api/system/&lt;action&gt;
+### `POST /api/system/<action>`
 
 `action` is `shutdown` or `reboot`. The request **must** have `Content-Type: application/json` (any body, e.g.
 `{}`); otherwise it is rejected with `415`.
@@ -416,7 +416,7 @@ Returns `{"ok": true}` straight away (the message plays in the background), or `
 | Status | Meaning |
 |---|---|
 | `200` `{"ok": true}` | The command was accepted; the Pi is going down. |
-| `403` | The service user may not run it. See [deployment](deployment.md#shutdown-and-reboot-permissions). |
+| `403` | The service user may not run it. See [Deployment](../admin/deployment.md#reboot-and-shutdown-permissions). |
 | `404` | Unknown action |
 | `415` | Not a JSON request |
 
@@ -442,9 +442,11 @@ These checks run before the endpoints above and are not authentication.
   `unknown host`. This blocks DNS-rebinding from the open internet.
 * **Origin.** A write (`POST`, `PUT`, `DELETE`) whose `Origin` header names another site returns **403**
   `cross-origin request refused`.
-* **Items.** `/api/play`, `/api/queue` and playlists accept only playable items: `kind: "ytm"` with an id made of
-  letters, digits, `-` and `_`, or `kind: "radio"` with an `http(s)` `url`. Because the URL goes straight to mpv,
-  nothing else (such as `file://`) is ever accepted. If nothing is left, the answer is **400** `no playable items`.
+* **Items.** `/api/play`, `/api/queue` and playlists accept only playable items, checked per `kind`: `ytm` needs an
+  id made of letters, digits, `-` and `_`; `yt` needs exactly 11 such characters; `sc` needs a numeric id and a
+  `https://soundcloud.com/...` permalink; `radio` needs an `http(s)` `url`. Because URLs go straight to mpv, nothing
+  else (such as `file://`) is ever accepted. Unknown fields are dropped and text is length-limited. If nothing is
+  left, the answer is **400** `no playable items`.
 * **Numbers.** A non-numeric `index`, `seconds` or `value` returns **400**, never 500. A JSON body that is not an
   object is treated as empty.
 * **Power.** `/api/system/*` additionally requires a JSON content type (see above).

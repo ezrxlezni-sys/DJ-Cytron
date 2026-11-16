@@ -3,7 +3,7 @@
 Two engines, both fully offline (nothing is sent anywhere, the voice is made on the Pi):
 
 * **Piper** (preferred): a neural voice that sounds natural. `pip install piper-tts` plus a voice file
-  (`data/voices/en_GB-alan-medium.onnx` and its `.onnx.json`, see docs/door-sensors.md).
+  (`data/voices/en_GB-alan-medium.onnx` and its `.onnx.json`, see docs/doors/announcements.md).
 * **espeak-ng** (fallback): robotic but tiny: sudo apt install espeak-ng
 
 A message is rendered ONCE and kept in a cache folder (keyed by engine, voice and text), so at the door it is just a

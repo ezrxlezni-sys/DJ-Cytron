@@ -1,8 +1,20 @@
 # Changelog
 
 All notable changes. Dates are `YYYY-MM-DD`. Upgrading? After pulling, follow
-[After pulling new code](docs/deployment.md#backups-and-updates): install requirements, re-copy the systemd unit,
+[Upgrading the app](docs/admin/maintenance.md#upgrading-the-app): install requirements, re-copy the systemd unit,
 restart, and hard-refresh the browser.
+
+## 2026-11-16
+
+### Documentation restructured
+- The docs now live in six folders under `docs/`: `guide/` (users), `admin/` (running the Pi), `doors/` (sensors, autoplay,
+  announcements), `reference/` (API, configuration, data files, glossary), `architecture/` and `contributing/`.
+  `docs/README.md` is the index.
+- New: installation, maintenance, security, consolidated troubleshooting, FAQ, glossary, data-file reference, design
+  decisions, front-end and testing guides. The README is shorter and links out.
+- Corrected: the built-in station count is 71 (not 32); the API accepts `yt` and `sc` items as well as `ytm` and `radio`;
+  the README Quick start now mentions the Piper voice.
+- Root files: `pytest.ini` moved into `pyproject.toml`; `requirements-dev.txt` removed (install `pytest` next to `requirements.txt`).
 
 ## 2026-11-13
 
@@ -23,7 +35,7 @@ restart, and hard-refresh the browser.
   pauses, then the volume is restored and the reminder is spoken. A door closing again mid-fade cancels it and the music carries on;
   moving the volume slider ends it and pauses at once. New Settings control *Fade out*.
 - **Piper neural voice** (`en_GB-alan-medium`, offline) replaces espeak-ng as the preferred engine; espeak-ng stays as an
-  automatic fallback. See [door-sensors.md](docs/door-sensors.md#the-voice). New: `piper-tts` in requirements, a voice file in
+  automatic fallback. See [Door announcements](docs/doors/announcements.md#installing-a-voice). New: `piper-tts` in requirements, a voice file in
   `data/voices/`, `PIPLAYER_PIPER_VOICE`, `PIPLAYER_VOICE_DIR`, `PIPLAYER_SPEECH_CACHE`.
 - Messages are **rendered once and cached**, and pre-rendered at start-up and when edited: no wait at the door. Silence is added
   before each message so the first word is not clipped.
@@ -100,7 +112,7 @@ restart, and hard-refresh the browser.
 
 ### Documentation
 - Every endpoint is now documented (playlists, queue move/clear, listen, shuffle and repeat were missing).
-- New [user guide](docs/user-guide.md); architecture, configuration, deployment and development rewritten to match
+- New [user guide](docs/guide/using-the-player.md); architecture, configuration, deployment and development rewritten to match
   the code; diagrams are Mermaid flowcharts.
 - Corrected: the volume is the Pi's **system** volume and always starts at 70 (the saved `volume` setting is written
   but not read back).
