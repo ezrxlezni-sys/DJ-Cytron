@@ -17,6 +17,16 @@ class StationStore:
         if not self.path.exists():
             shutil.copy(DEFAULTS, self.path)
 
+    @property
+    def _seq(self):
+        return self.path.with_name(self.path.stem + ".seq")
+
+    def _last_id(self):
+        try:
+            return int(self._seq.read_text().strip())
+        except (OSError, ValueError):
+            return 0
+
     def _read(self):
         try:
             with open(self.path) as f:
@@ -48,9 +58,12 @@ class StationStore:
     def add(self, title, url):
         with self._lock:
             items = self._read()
-            n = max([int(s["id"][2:]) for s in items if s["id"].startswith("st") and s["id"][2:].isdigit()] + [0])
-            items.append({"id": f"st{n + 1}", "title": title, "url": url})
+            # Ids never repeat: a deleted station's id may still sit in the saved queue, so a new station must not inherit it.
+            # The highest id handed out is kept in a small sidecar file, because deleting the newest station would lose it.
+            n = max([int(s["id"][2:]) for s in items if s["id"].startswith("st") and s["id"][2:].isdigit()] + [self._last_id()]) + 1
+            items.append({"id": f"st{n}", "title": title, "url": url})
             self._write(items)
+            self._seq.write_text(str(n))
             return items
 
     def update(self, sid, title, url):
@@ -66,7 +79,10 @@ class StationStore:
 
     def remove(self, sid):
         with self._lock:
-            items = [s for s in self._read() if s["id"] != sid]
+            old = self._read()
+            items = [s for s in old if s["id"] != sid]
+            if len(items) == len(old):
+                return None
             self._write(items)
             return items
 

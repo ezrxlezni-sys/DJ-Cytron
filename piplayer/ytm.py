@@ -40,7 +40,7 @@ def search(query, kind="songs", limit=20):
         out.append({
             "kind": "ytm", "id": r["videoId"], "title": r.get("title"),
             "artist": ", ".join(a["name"] for a in r.get("artists") or []),
-            "duration": r.get("duration_seconds"),
+            "duration": r.get("duration_seconds"), "explicit": bool(r.get("isExplicit")),
             "thumb": thumbs[-1]["url"] if thumbs else None,                 # small: list rows
             "art": hires(thumbs[-1]["url"]) if thumbs else None,            # large: now-playing panel
         })
@@ -75,7 +75,7 @@ def _artists(r):
 def _song(r, fallback_thumb=None):
     th = _thumb(r) or fallback_thumb
     return {"kind": "ytm", "id": r["videoId"], "title": r.get("title"), "artist": _artists(r),
-            "duration": r.get("duration_seconds"), "thumb": th, "art": hires(th)}
+            "duration": r.get("duration_seconds"), "explicit": bool(r.get("isExplicit")), "thumb": th, "art": hires(th)}
 
 
 def tracks(kind, cid, limit=100):
@@ -122,7 +122,7 @@ def suggest(seeds, per_seed=12):
                 seen.add(t["videoId"])
                 th = (t.get("thumbnail") or t.get("thumbnails") or [{}])[-1].get("url")
                 out.append({"kind": "ytm", "id": t["videoId"], "title": t.get("title"), "artist": _artists(t),
-                            "duration": _seconds(t.get("length")), "thumb": th, "art": hires(th)})
+                            "duration": _seconds(t.get("length")), "explicit": bool(t.get("isExplicit")), "thumb": th, "art": hires(th)})
     if not out:
         raise RuntimeError("no suggestions available")
     _suggest[key] = (time.time() + SUGGEST_TTL, out)

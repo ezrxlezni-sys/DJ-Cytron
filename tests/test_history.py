@@ -58,3 +58,12 @@ def test_clear_history(app, client):
 def test_clear_history_refuses_cross_site_requests(client):
     r = client.delete("/api/history", headers={"Origin": "http://evil.example"})
     assert r.status_code == 403
+
+
+def test_history_entry_without_a_timestamp_does_not_break_listing(tmp_path):
+    from piplayer.history import HistoryStore
+    h = HistoryStore(tmp_path / "history.json")
+    (tmp_path / "history.json").write_text('{"a": {"id": "a", "title": "A", "plays": 3}, "junk": 5}')
+    assert [e["id"] for e in h.recent()] == ["a"] and [e["id"] for e in h.top()] == ["a"]
+    h.record({"kind": "ytm", "id": "b", "title": "B"})
+    assert {e["id"] for e in h.recent()} == {"a", "b"}

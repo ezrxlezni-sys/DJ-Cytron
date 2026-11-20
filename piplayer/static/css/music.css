@@ -87,3 +87,15 @@
   .m-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:18px 12px}
   .m-grid.wide{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 }
+
+/* Topic shelves: a horizontally scrolling row of cover cards */
+.m-shelf{display:flex;gap:16px;overflow-x:auto;padding-bottom:6px;margin-right:-16px;scroll-snap-type:x proximity}
+/* slim themed bar: grows a little on hover */
+.m-shelf::-webkit-scrollbar{height:6px}
+.m-shelf::-webkit-scrollbar-track{background:transparent;margin-right:16px}
+.m-shelf::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted-foreground) 35%,transparent);border-radius:999px}
+.m-shelf:hover::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted-foreground) 60%,transparent)}
+@supports not selector(::-webkit-scrollbar){.m-shelf{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--muted-foreground) 45%,transparent) transparent}}
+.m-shelf>.m-card{flex:none;width:168px;scroll-snap-align:start}
+.m-shelf.wide>.m-card{width:236px}
+@media (max-width:820px){.m-shelf{gap:12px}.m-shelf>.m-card{width:140px}.m-shelf.wide>.m-card{width:200px}}

@@ -18,9 +18,11 @@
   const PLATFORMS = {
     ytm: {name: 'YouTube Music', source: '', blurb: 'Songs and albums, trending charts and suggestions.', placeholder: 'Search songs, artists…', view: 'list', chips: []},
     yt: {name: 'YouTube', source: 'youtube', blurb: 'Videos, live streams and podcasts, played as audio.', placeholder: 'Search YouTube…', view: 'grid',
-         chips: ['Lo-fi live radio', 'Podcasts', 'Live concerts', 'Chill mix', 'Workout music', 'News']},
+         chips: ['Lo-fi live radio', 'Podcasts', 'Live concerts', 'Chill mix', 'Workout music', 'News'],
+         shelves: ['Lo-fi live radio', 'Chill mix', 'Live concerts', 'Workout music', 'Podcasts']},
     sc: {name: 'SoundCloud', source: 'soundcloud', blurb: 'Remixes, DJ sets and independent artists.', placeholder: 'Search SoundCloud…', view: 'list',
          chips: ['Lo-fi', 'Electronic', 'Hip hop', 'House', 'Indie', 'DJ mix', 'Remix', 'Ambient'],
+         shelves: ['Lo-fi', 'Electronic', 'DJ mix', 'House', 'Ambient'],       // no Hip hop: SoundCloud cannot flag explicit tracks
          note: 'Songs from major labels are often only 30-second previews on SoundCloud, so they are hidden.'},
   };
   const KEYS = Object.keys(PLATFORMS);
@@ -35,7 +37,7 @@
 
   // ---------- data ----------
   const ok = r => Array.isArray(r) ? r : [];
-  const searchApi = (key, q) => api('search?q=' + encodeURIComponent(q) + '&type=songs' + (PLATFORMS[key].source ? '&source=' + PLATFORMS[key].source : ''))
+  const searchApi = (key, q, safe) => api('search?q=' + encodeURIComponent(q) + '&type=songs' + (safe ? '&safe=1' : '') + (PLATFORMS[key].source ? '&source=' + PLATFORMS[key].source : ''))
     .catch(() => ({error: 'network error'}));
   const play = (items, i) => api('play', 'POST', {items: items.slice(i)});
 
@@ -125,14 +127,47 @@
   const blurIfTouch = () => { if (matchMedia('(pointer:coarse)').matches && document.activeElement) document.activeElement.blur() };
 
   // ---------- YouTube Music shelves (used by the home page and the YouTube Music page) ----------
-  function musicShelves(body, alive, trendingN) {
-    const slots = {};
+  const feedCache = {};                                        // "trending" / "suggested" -> {at, items}: a layout switch redraws without refetching
+  const feed = async name => {
+    const hit = feedCache[name];
+    if (hit && Date.now() - hit.at < 300000) return hit.items;
+    const items = ok(await api(name)); if (items.length) feedCache[name] = {at: Date.now(), items};
+    return items;
+  };
+  function musicShelves(body, alive, trendingN, layout = 'list') {
+    const slots = {}, as = (items, ranked) => layout === 'grid' ? grid(items) : trackList(items, null, ranked);
     for (const [id, title] of [['trend', 'Trending now'], ['sugg', 'Suggested for you']]) {
-      slots[id] = el('div'); slots[id].append(loading(title, 'list')); body.append(slots[id]);
+      slots[id] = el('div'); slots[id].append(loading(title, layout)); body.append(slots[id]);
     }
     const fill = (id, node) => { if (!alive()) return; node ? slots[id].replaceChildren(node) : slots[id].remove() };
-    api('trending').then(r => fill('trend', ok(r).length ? section('Trending now', trackList(r.slice(0, trendingN), null, true)) : null)).catch(() => fill('trend', null));
-    api('suggested').then(r => fill('sugg', ok(r).length ? section('Suggested for you', trackList(r.slice(0, 8))) : null)).catch(() => fill('sugg', null));
+    feed('trending').then(r => fill('trend', r.length ? section('Trending now', as(r.slice(0, trendingN), true)) : null)).catch(() => fill('trend', null));
+    feed('suggested').then(r => fill('sugg', r.length ? section('Suggested for you', as(r.slice(0, 8))) : null)).catch(() => fill('sugg', null));
+  }
+
+  // ---------- topic shelves (YouTube and SoundCloud start pages): real results instead of a bare list of chips ----------
+  const shelfCache = {};                                       // "key|topic" -> items; revisiting a page is instant
+  function topicShelves(key, body, alive, onMore) {
+    const cfg = PLATFORMS[key], wide = key === 'yt', slots = [];
+    for (const topic of cfg.shelves || []) {
+      const slot = el('div'); slot.append(loading(topic, views[key] === 'list' ? 'list' : 'grid', wide)); body.append(slot); slots.push([topic, slot]);
+    }
+    (async () => {                                             // (shelves ask for the safe list: no explicit content) one at a time: each search is a slow yt-dlp run on the Pi
+      for (const [topic, slot] of slots) {
+        if (!alive()) return;
+        const ck = key + '|' + topic;
+        let items = shelfCache[ck];
+        if (!items) { const r = await searchApi(key, topic, true); items = ok(r); if (items.length) shelfCache[ck] = items }
+        if (!alive()) return;
+        if (!items.length) { slot.remove(); continue }
+        let node;
+        if (views[key] === 'list') node = trackList(items.slice(0, 5));       // list view: a few rows per topic
+        else {                                                               // grid view: a scrolling row of covers
+          node = el('div', 'm-shelf' + (wide ? ' wide' : ''));
+          const shown = items.slice(0, 8); shown.forEach((it, i) => node.append(card(it, shown, i, wide)));
+        }
+        slot.replaceChildren(section(topic, node, ['See all', () => onMore(topic)]));
+      }
+    })();
   }
 
   // ---------- pages ----------
@@ -217,16 +252,18 @@
     paintSeg();
     seg.onclick = ev => {
       const b = ev.target.closest('button[data-view]'); if (!b || views[key] === b.dataset.view) return;
-      views[key] = b.dataset.view; saveViews(); paintSeg(); if (st.items) renderResults();
+      views[key] = b.dataset.view; saveViews(); paintSeg();
+      if (st.items) renderResults(); else if (!st.q) idle();               // results or the start page: both follow the layout
     };
 
     function idle() {
       const gen = ++st.gen; body.replaceChildren();
       const r = recentsBlock(q => search(q), idle); if (r) body.append(r);
-      if (key === 'ytm') return musicShelves(body, () => gen === st.gen && !st.q, 20);
+      if (key === 'ytm') return musicShelves(body, () => gen === st.gen && !st.q, 20, views.ytm);
       const s = el('section', 'msec'); s.append(el('h2', 'msec-title', 'Try searching'), chipRow(cfg.chips, search));
       if (cfg.note) s.append(el('p', 'm-note', cfg.note));
       body.append(s);
+      if (cfg.shelves) topicShelves(key, body, () => gen === st.gen && !st.q, search);
     }
     function renderResults() {
       body.replaceChildren();

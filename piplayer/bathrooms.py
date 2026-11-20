@@ -25,6 +25,7 @@ normal state stream, and is edited through POST /api/doors, like volume.
 """
 import datetime
 import logging
+import random
 import threading
 import time
 
@@ -38,10 +39,13 @@ STALE_AFTER = 4 * 3600                        # seconds of opening time without 
 DEFAULTS = {"autoplay": False, "from": "08:00", "to": "18:00", "fade": 5, "fadeout": 3, "announce": True,
             "welcome": "Thank you for choosing Cytron DJ. Enjoy the vibe!",
             "reminder": "Please remember to flush and keep it clean.",
-            "duck": 30, "rise": 2, "voice": ""}
-MESSAGE_MAX = 160                             # characters per announcement
+            "duck": 30, "rise": 2, "voice": "", "speed": 1.0}
+MESSAGE_MAX = 160                             # characters per announcement (each variant)
+MESSAGE_VARIANTS = 10                         # variants per message, one per line: a different one is said each time
+GREETINGS = {"morning": "Good morning", "afternoon": "Good afternoon", "evening": "Good evening"}   # for {greeting}
 FADE_START = 0.08                             # a fade begins at this fraction of the normal volume
 FADE_STEPS = 20                               # volume updates per fade
+RETRY_AFTER = 30                              # seconds: a failed autoplay start (stream down, track unplayable) is retried this often
 FADE_CURVE = 2.0                              # >1: starts gently; loudness is felt logarithmically, so a straight line sounds like a jump
 
 
@@ -60,12 +64,15 @@ class Bathrooms:
     def __init__(self, svc, button_factory=_gpio_button, clock=datetime.datetime.now):
         self.svc, self._factory, self._clock = svc, button_factory, clock
         self._lock = threading.Lock()         # guards room readings
+        self._start_lock = threading.Lock()   # two saves at once must not both rewire the sensors
         self._eval_lock = threading.Lock()    # serialises autoplay decisions
         self._rooms = {r: {"occupied": None, "since": None} for r in ROOMS}
         self._buttons = []                    # keep gpiozero objects alive
         self._pins, self.error = {}, None
         self._playing = None                  # autoplay edge state: None = unknown / switched off
         self._paused = None                   # (kind, id) of the item autoplay paused, to resume it
+        self._tried = 0.0                     # when autoplay last started something (for the retry after a failure)
+        self._last = {}                       # the variant said last, per message kind
         self.speaker = speech.speak           # text -> speech (replaced in tests)
         self.preparer = speech.prepare        # texts -> rendered ahead of time (replaced in tests)
         self._ducked = False                  # the music is dipped for a message (guarded by _speech_lock)
@@ -87,6 +94,7 @@ class Bathrooms:
     def configure(self, patch):
         """Validate and apply a partial update. Returns an error message, or None."""
         saved = dict(self.svc.settings.get("bathrooms") or {})
+        old_pins = self.config()["pins"]
         if "pins" in patch:
             try:
                 pins = {r: int(patch["pins"][r]) for r in ROOMS if patch["pins"].get(r) not in (None, "")}
@@ -112,10 +120,13 @@ class Bathrooms:
             if key in patch:
                 if not isinstance(patch[key], str):
                     return "Messages must be text"
-                text = " ".join(patch[key].split())
-                if len(text) > MESSAGE_MAX:
-                    return f"Messages can be at most {MESSAGE_MAX} characters"
-                saved[key] = text
+                lines = [" ".join(line.split()) for line in patch[key].splitlines()]
+                lines = [line for line in lines if line]              # one variant per line, blank lines ignored
+                if any(len(line) > MESSAGE_MAX for line in lines):
+                    return f"Each message can be at most {MESSAGE_MAX} characters"
+                if len(lines) > MESSAGE_VARIANTS:
+                    return f"At most {MESSAGE_VARIANTS} messages (one per line)"
+                saved[key] = "\n".join(lines)
         if "duck" in patch:
             try:
                 duck = int(patch["duck"])
@@ -132,6 +143,14 @@ class Bathrooms:
             if not 0 <= rise <= 30:
                 return "Return time must be 0-30 seconds"
             saved["rise"] = rise
+        if "speed" in patch:
+            try:
+                speed = float(patch["speed"])
+            except (TypeError, ValueError):
+                return "Speaking speed must be a number"
+            if not speech.MIN_SPEED <= speed <= speech.MAX_SPEED:
+                return f"Speaking speed must be between {speech.MIN_SPEED:g}x and {speech.MAX_SPEED:g}x"
+            saved["speed"] = speed
         if "voice" in patch:
             if not isinstance(patch["voice"], str) or (patch["voice"] and patch["voice"] not in speech.voices()):
                 return "That voice is not installed"
@@ -154,9 +173,10 @@ class Bathrooms:
             saved["fade"] = fade
         self.svc.settings.set("bathrooms", saved)
         speech.use_voice(saved.get("voice", ""))
-        if "pins" in patch:
-            self.start()
-        if "welcome" in patch or "reminder" in patch or "voice" in patch:
+        speech.use_speed(saved.get("speed", 1.0))
+        if "pins" in patch and (saved["pins"] != old_pins or self.error):
+            self.start()                      # only on a real rewire (or to retry a failure): start() blanks the readings, which would pause the music
+        if "welcome" in patch or "reminder" in patch or "voice" in patch or "speed" in patch:
             self.prewarm()                    # render the edited message now, not at the door
         self.evaluate()
         self.svc.notify()
@@ -197,6 +217,10 @@ class Bathrooms:
 
     def start(self):
         """(Re)open the sensors from the current config. Never raises: failures land in .error."""
+        with self._start_lock:
+            self._start()
+
+    def _start(self):
         self._release()
         self.error = None
         for room in ROOMS:                    # drop readings of the previous wiring
@@ -241,12 +265,26 @@ class Bathrooms:
                 self._fade_cancel()
                 return
             want = self._wanted()
+            if want and self._playing and self._failed():
+                self._playing = None                      # the music we started died (stream down, unplayable track): try again
             if want == self._playing:
                 return
             self._playing = want
             if want and not self._out_idle.is_set():
                 self._fade_cancel()                       # someone is back mid fade-out: the music carries on at your volume
-            (self._play if want else self._halt)()
+            try:
+                ok = (self._play if want else self._halt)()
+            except Exception:
+                self._playing = None                      # never remember a start that did not happen: the next tick retries
+                raise
+            if want and ok is False:
+                self._playing = None                      # nothing could be started (empty queue, no stations): retry later
+
+    def _failed(self):
+        """True when the player gave up (error shown, nothing playing or loading) some time after autoplay started it.
+        A manual stop leaves no error, so it is still respected."""
+        snap = self.svc.player.snapshot()
+        return bool(snap["error"]) and not (snap["playing"] or snap["loading"]) and time.time() - self._tried >= RETRY_AFTER
 
     def _key(self, snap):
         cur = snap["current"]
@@ -254,28 +292,33 @@ class Bathrooms:
 
     def _play(self):
         try:
-            self._start_music()
+            return self._start_music()
         finally:
             if self._speech_lock.locked() and not self._ducked:
                 self._duck_music(True)             # music that starts while a message is being spoken stays under the voice
 
     def _start_music(self):
+        """Start or resume the music. Returns False when there was nothing to start."""
         p = self.svc.player
         snap = p.snapshot()
-        if self._paused and snap["paused"] and self._key(snap) == self._paused:    # we silenced/paused it: carry on
+        self._tried = time.time()
+        if snap["playing"] and snap["paused"]:             # paused or muted (by us, or by hand): carry on where it was
             self._paused = None
             self._fade_begin()
-            (p.hold if snap["current"]["kind"] == "radio" else p.pause)(False)     # instant either way
-            return
+            (p.hold if snap["held"] else p.pause)(False)   # instant either way
+            return True
         self._paused = None
         if snap["playing"] or snap["loading"]:
-            return                                         # already playing something
+            return True                                    # already playing something
         if snap["queue"]:
             self._fade_begin()
             p.play_index(snap["index"] if 0 <= snap["index"] < len(snap["queue"]) else 0)
-        elif (st := next(iter(self.svc.stations.all()), None)):        # empty queue: first station
+            return True
+        if (st := next(iter(self.svc.stations.all()), None)):          # empty queue: first station
             self._fade_begin()
             p.play_now([as_queue_item(st)])
+            return True
+        return False
 
     def _halt(self):
         if self._fade_out():
@@ -298,8 +341,36 @@ class Bathrooms:
             (p.hold if live else p.pause)(True)            # radio: keep the stream, silent -> instant + live
 
     # ---------- announcements ----------
+    def _variants(self, kind):
+        """The saved messages of this kind, one per line (a plain one-line message is a single variant)."""
+        return [" ".join(line.split()) for line in str(self.config().get(kind) or "").splitlines() if line.split()]
+
+    def _daypart(self):
+        h = self._clock().hour
+        return "morning" if h < 12 else "afternoon" if h < 18 else "evening"
+
+    @staticmethod
+    def _expand(text, part):
+        return text.replace("{greeting}", GREETINGS[part])
+
     def _text(self, kind):
-        return " ".join(str(self.config().get(kind) or "").split())
+        """One message to say now: a random variant (never the same twice in a row), with {greeting} filled in."""
+        variants = self._variants(kind)
+        if not variants:
+            return ""
+        if len(variants) > 1 and self._last.get(kind) in variants:
+            variants = [v for v in variants if v != self._last[kind]]
+        pick = random.choice(variants)
+        self._last[kind] = pick
+        return self._expand(pick, self._daypart())
+
+    def _all_texts(self):
+        """Every wording that could be said (each variant, each greeting): all rendered ahead of time."""
+        out = []
+        for kind in ("welcome", "reminder"):
+            for v in self._variants(kind):
+                out += [self._expand(v, part) for part in (GREETINGS if "{greeting}" in v else ("morning",))]
+        return list(dict.fromkeys(out))
 
     def _announcement(self, before, occupied):
         """'welcome' (a door closed) or 'reminder' (a door opened) when something should be said, else None.
@@ -307,7 +378,7 @@ class Bathrooms:
         if before is None or occupied is None:
             return None
         kind = "welcome" if occupied else "reminder"
-        if not self.config()["announce"] or not self._text(kind) or not self._in_hours() or not self._speech_ok():
+        if not self.config()["announce"] or not self._variants(kind) or not self._in_hours() or not self._speech_ok():
             return None
         return kind
 
@@ -351,7 +422,7 @@ class Bathrooms:
         def work():
             try:
                 if self._speech_ok():
-                    self.preparer(*[t for t in (self._text("welcome"), self._text("reminder")) if t])
+                    self.preparer(*self._all_texts())
             except Exception as e:
                 log.warning("could not prepare the announcements: %s: %s", type(e).__name__, str(e)[:200])
         threading.Thread(target=work, daemon=True, name="speech-prep").start()
@@ -472,6 +543,7 @@ class Bathrooms:
     def run(self, interval=20):
         """Start sensors and a light ticker that catches the opening/closing time boundaries."""
         speech.use_voice(self.config()["voice"])
+        speech.use_speed(self.config()["speed"])
         self.start()
         self.prewarm()
 

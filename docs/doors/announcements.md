@@ -77,10 +77,15 @@ The dip uses mpv's own volume, so it does not change the Pi's system volume or t
 |---|---|---|
 | Speak at the doors | `announce` | on / off (default on) |
 | Voice | `voice` | Automatic, a Piper voice name, or `espeak-ng` |
+| Speaking speed | `speed` | 0.5 to 1.5 (default 1; applies to both messages; needs a recent `piper-tts` for Piper) |
 | Music during a message | `duck` | 0 to 100 % (default 30; 100 = no dip) |
 | Music comes back | `rise` | 0 to 30 s (default 2; 0 = instantly) |
-| Welcome | `welcome` | text, up to 160 characters (empty = say nothing) |
-| Reminder | `reminder` | text, up to 160 characters (empty = say nothing) |
+| Welcome | `welcome` | up to 10 messages, one per line, each up to 160 characters (empty = say nothing) |
+| Reminder | `reminder` | same as the welcome |
+
+With several lines, a different message is said each time (never the same one twice in a row). `{greeting}` in a
+message becomes "Good morning" (before 12:00), "Good afternoon" (before 18:00) or "Good evening". Every wording is
+rendered ahead of time, so the door never waits for the voice.
 
 ## Troubleshooting
 

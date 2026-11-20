@@ -182,6 +182,30 @@ const submit = (pane, q) => { const form = pane.querySelector('form.m-search'), 
   submit(ytm, 'first'); submit(ytm, 'second'); await tick(80);
   check('ytm: newest search wins', /for “second”/.test(text(ytm)) && !/for “first”/.test(text(ytm)), text(ytm).slice(0, 100));
 
+  // ----- the grid / list toggle also re-lays-out the START page (before any search) -----
+  const toStart = pane => { const i = pane.querySelector('form.m-search').querySelector('input'); i.value = ''; i.fire('input') };
+  const setView = async (pane, v) => { const seg = pane.querySelector('.view-seg'); seg.fire('click', {target: seg.querySelector('button[data-view=' + v + ']')}); await tick(150) };
+  const shape = pane => ({shelves: pane.all('div.m-shelf').length, rows: pane.all('div.item').length, cards: pane.all('div.m-card').length, grids: pane.all('div.m-grid').filter(g => g.all('div.m-card').length > 0).length});
+  toStart(yt); await tick(150);
+  let sh = shape(yt);
+  check('yt start: grid view = 5 scrolling cover shelves', sh.shelves === 5 && sh.rows === 0, JSON.stringify(sh));
+  await setView(yt, 'list'); sh = shape(yt);
+  check('yt start: list view = rows, 5 per topic', sh.shelves === 0 && sh.rows === 25, JSON.stringify(sh));
+  await setView(yt, 'grid');
+  toStart(sc); await tick(150);
+  sh = shape(sc);
+  check('sc start: list view = rows, 5 per topic', sh.shelves === 0 && sh.rows === 25, JSON.stringify(sh));
+  await setView(sc, 'grid'); sh = shape(sc);
+  check('sc start: grid view = 5 scrolling cover shelves', sh.shelves === 5 && sh.rows === 0, JSON.stringify(sh));
+  await setView(sc, 'list');
+  toStart(ytm); await tick(150);
+  sh = shape(ytm);
+  check('ytm start: list view = Trending (20) + Suggested (8) rows', sh.rows === 28 && sh.cards === 0, JSON.stringify(sh));
+  await setView(ytm, 'grid'); sh = shape(ytm);
+  check('ytm start: grid view = covers, no rows', sh.rows === 0 && sh.cards === 28, JSON.stringify(sh));
+  check('ytm start: shelves keep their titles', ['Trending now', 'Suggested for you'].every(t => text(ytm).includes(t)));
+  await setView(ytm, 'list');
+
   // ----- misc -----
   check('focus helper', typeof ctx.musicFocus === 'function'); ctx.musicFocus();
   check('unknown tab ignored', (() => { try { ctx.musicShow('radio'); return true } catch (e) { return false } })());

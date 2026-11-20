@@ -625,3 +625,116 @@ def test_the_reminder_waits_for_the_fadeout(app):
     b.set("male", False)
     assert wait_for(lambda: heard)
     assert heard == [("Please remember to flush and keep it clean.", True)]    # spoken once the music had paused
+
+
+# ---------- speaking speed, message variants, {greeting} ----------
+def test_speaking_speed_setting_default_and_validation(client):
+    from piplayer import speech
+    assert doors(client)["speed"] == 1.0
+    assert post(client, {"speed": 0.75}).status_code == 200
+    assert doors(client)["speed"] == 0.75 and speech._chosen["speed"] == 0.75
+    for bad in (0.1, 2, "fast", None):
+        assert post(client, {"speed": bad}).status_code == 400
+    assert doors(client)["speed"] == 0.75                        # rejected values change nothing
+    post(client, {"speed": 1.0})
+
+
+def test_speed_changes_the_cache_key_and_the_espeak_rate(monkeypatch):
+    from piplayer import speech
+    speech.use_speed(1.0)
+    normal = speech._key("espeak-ng", "hi")
+    speech.use_speed(1.5)
+    try:
+        assert speech._key("espeak-ng", "hi") != normal          # a new speed is rendered again, not served from the cache
+        calls = []
+        monkeypatch.setattr(speech.subprocess, "run", lambda cmd, **kw: calls.append(cmd))
+        monkeypatch.setattr(speech, "_pad", lambda src, dst: None)
+        monkeypatch.setattr(speech.Path, "unlink", lambda self, *a, **k: None)
+        speech._render_espeak("hi", speech.Path("/tmp/x.wav"))
+        assert calls[0][calls[0].index("-s") + 1] == "225"       # 150 words/min x 1.5
+        speech.use_speed("junk")
+        assert speech._chosen["speed"] == 1.0                    # nonsense falls back to normal
+        speech.use_speed(9)
+        assert speech._chosen["speed"] == speech.MAX_SPEED       # and out-of-range values are clamped
+    finally:
+        speech.use_speed(1.0)
+
+
+def test_messages_are_one_variant_per_line(client):
+    assert post(client, {"welcome": "  Hello   there \n\n Welcome in  \n"}).status_code == 200
+    assert doors(client)["welcome"] == "Hello there\nWelcome in"
+    assert post(client, {"welcome": "\n".join(["x"] * 11)}).status_code == 400     # too many variants
+    assert post(client, {"welcome": "ok\n" + "x" * 161}).status_code == 400       # one line too long
+    assert doors(client)["welcome"] == "Hello there\nWelcome in"
+
+
+def test_a_different_variant_is_said_each_time_and_never_the_same_twice(app):
+    svc, b, sp = talking(app, welcome="One\nTwo\nThree")
+    said = [b._text("welcome") for _ in range(30)]
+    assert set(said) == {"One", "Two", "Three"}
+    assert all(a != c for a, c in zip(said, said[1:]))
+    svc2, b2, _ = talking(app, welcome="Only one")
+    assert [b2._text("welcome") for _ in range(3)] == ["Only one"] * 3          # a single message is just repeated
+
+
+def test_greeting_follows_the_time_of_day_and_every_wording_is_prepared(app):
+    svc, b, sp = talking(app, welcome="{greeting}! Welcome.")
+    for hour, word in ((9, "Good morning"), (14, "Good afternoon"), (20, "Good evening")):
+        b._clock = lambda h=hour: datetime.datetime(2026, 1, 1, h, 0)
+        assert b._text("welcome") == f"{word}! Welcome."
+    b._clock = lambda: datetime.datetime(2026, 1, 1, 9, 0)
+    b.set("male", True)                                        # and a real door event says it too
+    assert wait_for(lambda: sp.said) and sp.said == ["Good morning! Welcome."]
+    svc, b, sp = talking(app, welcome="{greeting}! Hi\nPlain", reminder="Bye")
+    assert sorted(b._all_texts()) == sorted(["Good morning! Hi", "Good afternoon! Hi", "Good evening! Hi", "Plain", "Bye"])
+
+
+def test_a_closed_door_resumes_music_the_user_had_paused(app):
+    svc, _ = setup_doors(app)
+    b = svc.bathrooms
+    svc.player.play_now([{"kind": "ytm", "id": "mine", "title": "Mine"}])
+    assert wait_for(lambda: svc.player.snapshot()["playing"])
+    b.set("male", False); b.set("female", False)
+    assert wait_for(lambda: paused(svc))
+    svc.player.pause(False); assert wait_for(lambda: not paused(svc))
+    svc.player.pause(True); assert wait_for(lambda: paused(svc))     # paused by hand while nobody is in
+    b._playing = None
+    b.set("male", True)                                       # a visitor closes the door
+    assert wait_for(lambda: not paused(svc))                  # ...the music must play, not stay silent
+
+
+def test_autoplay_retries_when_the_stream_failed_to_start(app):
+    svc, _ = setup_doors(app)
+    b = svc.bathrooms
+    b.RETRY_AFTER = 0
+    import piplayer.bathrooms as mod
+    mod.RETRY_AFTER = 0
+    svc.player.queue = []
+    svc.stations.all = lambda: []                             # nothing to play yet
+    b.set("male", True)
+    assert b._playing is None                                 # not remembered as "started"
+    svc.stations.all = lambda: [{"id": "r1", "title": "R", "url": "http://x/", "kind": "radio"}]
+    b.evaluate()                                              # the next tick
+    assert wait_for(lambda: svc.player.snapshot()["playing"])
+    svc.player.state.update(playing=False, loading=False, error="Could not play this item")   # the stream dropped for good
+    b.evaluate()
+    assert wait_for(lambda: svc.player.snapshot()["playing"] and not svc.player.snapshot()["error"])
+
+
+def test_saving_other_settings_does_not_restart_the_sensors(app, client):
+    """The UI resends the pins with every autosave: an unchanged wiring must not blank the readings (that paused the music)."""
+    svc, made = setup_doors(app, pins={"male": 12, "female": 13})
+    svc.bathrooms.start()
+    made[12].when_pressed()                                   # someone is inside
+    since = svc.bathrooms.snapshot()[0]["since"]
+    assert post(client, {"pins": {"male": 12, "female": 13}, "fade": 3}).status_code == 200
+    room = svc.bathrooms.snapshot()[0]
+    assert room["occupied"] is True and room["since"] == since
+    assert not made[12].closed                                # the same button object is still in use
+
+
+def test_unchanged_pins_are_retried_after_a_gpio_error(app, client):
+    svc, made = setup_doors(app, pins={"male": 12})
+    svc.bathrooms.error = "RuntimeError: pin busy"
+    post(client, {"pins": {"male": 12}})
+    assert svc.bathrooms.error is None and 12 in made        # a save is the way to retry a failed start

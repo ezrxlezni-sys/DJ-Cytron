@@ -506,13 +506,15 @@ label.srow{cursor:pointer}
 .hours{display:flex;align-items:center;gap:8px;flex:none}
 .hours em{font-style:normal;font-size:12px;color:var(--muted-foreground)}
 .hours .sel{width:118px}
+.hours input[type=range]{width:118px;flex:none}
+#speedval{min-width:34px;text-align:right}
 #voicerow .sel{width:200px}#duckrow .sel,#risesrow .sel{width:170px}
 .srow-hours{transition:opacity .15s}
 .srow-hours.off{opacity:.45;pointer-events:none}
 .scard .danger-btn{color:var(--destructive)}
 @media (max-width:820px){
   .srow-hours{flex-direction:column;align-items:stretch;gap:10px}
-  .hours{width:100%}.hours .sel,#voicerow .sel,#duckrow .sel,#risesrow .sel{flex:1;width:auto}
+  .hours{width:100%}.hours input[type=range]{flex:1;width:auto}.hours .sel,#voicerow .sel,#duckrow .sel,#risesrow .sel{flex:1;width:auto}
 }
 #settings .pane-head .badge{flex:none;align-self:center}
 #settings{max-width:none;margin:0}   /* Settings uses the full width next to the sidebar, not the 1000px centred column */
@@ -654,5 +656,24 @@ label.srow{cursor:pointer}
 .srow-msg{align-items:center}
 .srow-msg .msg{display:flex;align-items:center;gap:8px;flex:1;min-width:0;max-width:440px}
 .srow-msg .msg .input{flex:1;min-width:0;width:auto}
-#speecherr code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.srow-msg textarea.input{height:auto;min-height:64px;padding:8px 12px;line-height:20px;resize:vertical;font:inherit;color:inherit}
+.srow-msg .msg .btn{align-self:flex-start}
+.srow-text small code,#speecherr code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
 @media (max-width:820px){.srow-msg{flex-direction:column;align-items:stretch;gap:10px}.srow-msg .msg{max-width:none}}
+
+/* equalizer: the back of the big cover */
+.flip-btn{position:absolute;top:8px;right:8px;z-index:3;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;color:#fff;background:#000a;border:1px solid #fff3;backdrop-filter:blur(6px);cursor:pointer}
+.flip-btn svg{width:18px;height:18px}
+.flip-btn:hover,.flip-btn:focus-visible,.flip-btn[aria-pressed=true]{background:#fff;color:#111}
+.eq-face{display:none;position:absolute;inset:0;z-index:2;flex-direction:column;gap:8px;padding:12px;background:#15151b;color:#fff;font-weight:400;text-align:left}
+.np-art.eq-on .eq-face{display:flex}
+.eq-title{font-size:13px;font-weight:600;line-height:34px;margin:-6px 0 -4px}
+.eq-chips{display:flex;flex-wrap:wrap;gap:4px}
+.eq-chip{height:24px;padding:0 9px;border-radius:999px;font-size:11px;font-weight:500;color:#fffc;background:#ffffff1a;cursor:pointer}
+.eq-chip.on{background:#fff;color:#111}
+.eq-bands{flex:1;min-height:0;display:flex;justify-content:space-between;gap:2px}
+.eq-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:#fffa}
+.eq-col em{font-style:normal;font-variant-numeric:tabular-nums;color:#fff}
+#player .eq-col input[type=range]{flex:1;min-height:0;height:auto;width:20px;writing-mode:vertical-lr;direction:rtl;background:linear-gradient(#ffffff40,#ffffff40) center/4px 100% no-repeat;border-radius:0}
+#player .eq-col input[type=range]::-webkit-slider-thumb{width:16px;height:16px}
+#player .eq-col input[type=range]::-moz-range-thumb{width:16px;height:16px}

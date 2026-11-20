@@ -65,11 +65,20 @@ class PlaylistStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
     def _read(self):
+        """The saved playlists. A missing file is an empty list; a file that is not a list of playlists is kept aside as
+        playlists.json.bad-<time> (never silently overwritten); any other read error is raised, so a failed read cannot
+        turn into a write that wipes everything."""
         try:
             with open(self.path) as f:
-                return json.load(f)
-        except (OSError, ValueError):
+                data = json.load(f)
+        except FileNotFoundError:
             return []
+        except ValueError:
+            data = None
+        if isinstance(data, list) and all(isinstance(p, dict) and "id" in p and isinstance(p.get("items"), list) for p in data):
+            return data
+        os.replace(self.path, self.path.with_name(f"{self.path.name}.bad-{int(time.time())}"))
+        return []
 
     def _write(self, lists):
         tmp = self.path.with_suffix(".tmp")

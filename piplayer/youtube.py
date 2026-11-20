@@ -34,7 +34,7 @@ def search(query, kind="songs", limit=20):
             continue
         out.append({
             "kind": "yt", "id": vid, "title": e["title"], "artist": e.get("channel") or e.get("uploader") or "",
-            "duration": int(e["duration"]) if e.get("duration") else None,
+            "duration": int(e["duration"]) if e.get("duration") else None, "explicit": (e.get("age_limit") or 0) >= 18,
             "thumb": _thumb(e, vid, False), "art": _thumb(e, vid, True),
         })
         if len(out) >= limit:

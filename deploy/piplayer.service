@@ -7,9 +7,9 @@ Wants=network-online.target
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/Documents/pi-player
-# One worker only: the player (mpv) lives inside the process. Threads serve the browsers (live updates hold one each).
+# One worker only: the player (mpv) lives inside the process. Threads serve the browsers (live updates hold one each, capped at 48 in api.py).
 # Port 80 so the URL is just http://cytrondj.local
-ExecStart=/home/pi/Documents/pi-player/.venv/bin/gunicorn --workers 1 --worker-class gthread --threads 32 \
+ExecStart=/home/pi/Documents/pi-player/.venv/bin/gunicorn --workers 1 --worker-class gthread --threads 64 \
   --bind 0.0.0.0:80 --timeout 120 --graceful-timeout 5 piplayer.wsgi:app
 # Restart after a crash AND after a clean-but-unexpected exit
 Restart=always

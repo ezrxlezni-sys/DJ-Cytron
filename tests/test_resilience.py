@@ -229,3 +229,19 @@ def test_frontend_js_parses():
     js = Path(__file__).parent.parent / "piplayer" / "static" / "js" / "app.js"
     r = subprocess.run(["node", "--check", str(js)], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
+
+
+def test_app_starts_without_mpv_and_recovers_when_it_appears(tmp_path):
+    import sys
+    from conftest import FAKE, wait_for
+    from piplayer.config import Config
+    from piplayer.player import Player
+    cmd = tmp_path / "mpv-launcher"
+    p = Player(lambda item: "x", mpv_cmd=("/nonexistent/mpv",), socket_path=str(tmp_path / "s.sock"))
+    try:
+        assert "unavailable" in p.snapshot()["error"]          # the app came up; the engine is retried in the background
+        p.toggle()                                             # and nothing crashes meanwhile
+        p.mpv_cmd = [sys.executable, FAKE]
+        assert wait_for(lambda: p._sock is not None, timeout=6)
+    finally:
+        p.close()

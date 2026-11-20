@@ -31,15 +31,16 @@ log = logging.getLogger("piplayer.speech")
 
 ESPEAK = "espeak-ng"
 PLAYERS = ("pw-play", "aplay")
-MAX_CHARS = 160
+MAX_CHARS = 180
 PAD_START = 0.35                  # seconds of silence before the voice (a sleeping sink swallows the first syllable)
 PAD_END = 0.15
-CACHE_KEEP = 30                   # rendered files kept; the oldest are deleted
+CACHE_KEEP = 150                  # rendered files kept; the oldest are deleted
+MIN_SPEED, MAX_SPEED = 0.5, 1.5   # speaking speed multiplier limits
 DEFAULT_PIPER_VOICE = "en_GB-alan-medium.onnx"
 _ROOT = Path(__file__).resolve().parent.parent / "data"
 
-_chosen = {"voice": ""}                   # the voice picked in Settings: a Piper voice name, "espeak-ng", or "" = best available
-_probe = {"at": 0.0, "engine": None}      # engine detection is cached: it is asked for on every state push
+_chosen = {"voice": "", "speed": 1.0}                   # the voice picked in Settings: a Piper voice name, "espeak-ng", or "" = best available
+_probe = {"at": 0.0, "engine": None, "voices_at": 0.0, "voices": []}      # engine detection is cached: it is asked for on every state push
 _render_lock = threading.Lock()           # one render at a time (the neural model is big, the Pi is small)
 
 
@@ -66,8 +67,11 @@ def _piper_models():
 
 
 def voices():
-    """The voices Settings can offer: installed Piper voices, then espeak-ng."""
-    return [*_piper_models(), *([ESPEAK] if shutil.which(ESPEAK) else [])]
+    """The voices Settings can offer: installed Piper voices, then espeak-ng. Cached for a few seconds: every state push asks."""
+    if time.monotonic() - _probe["voices_at"] > 10:
+        _probe["voices"] = [*_piper_models(), *([ESPEAK] if shutil.which(ESPEAK) else [])]
+        _probe["voices_at"] = time.monotonic()
+    return list(_probe["voices"])
 
 
 def use_voice(name):
@@ -75,6 +79,15 @@ def use_voice(name):
     if _chosen["voice"] != (name or ""):
         _chosen["voice"] = name or ""
         forget_probe()
+
+
+def use_speed(speed):
+    """Set how fast messages are spoken (from Settings): 1.0 = normal, 0.5 = half speed, 1.5 = one and a half times."""
+    try:
+        speed = min(MAX_SPEED, max(MIN_SPEED, float(speed)))
+    except (TypeError, ValueError):
+        speed = 1.0
+    _chosen["speed"] = speed
 
 
 def _piper_model():
@@ -96,7 +109,7 @@ def engine():
 
 def forget_probe():
     """Re-detect the engine on the next call (after installing a voice, and in tests)."""
-    _probe["at"] = 0.0
+    _probe["at"] = _probe["voices_at"] = 0.0
 
 
 def available():
@@ -111,7 +124,7 @@ def clean(text):
 # ---------- rendering ----------
 def _key(eng, text):
     voice = _piper_model().name if eng == "piper" else os.environ.get("PIPLAYER_TTS_VOICE", "en-us+f3")
-    return hashlib.sha1(f"{eng}|{voice}|{text}".encode()).hexdigest()[:20]
+    return hashlib.sha1(f"{eng}|{voice}|{_chosen['speed']:.2f}|{text}".encode()).hexdigest()[:20]
 
 
 def _pad(src, dst):
@@ -127,12 +140,19 @@ def _pad(src, dst):
 def _render_piper(todo):
     """Render [(text, out_path)] with ONE model load (about 7 s on a Pi 4), then let the model go to free its memory."""
     from piper import PiperVoice
+    try:
+        from piper import SynthesisConfig as syn_config
+    except ImportError:                       # an older piper-tts: no speed control
+        syn_config = None
     voice = PiperVoice.load(str(_piper_model()))
     try:
         for text, out in todo:
             raw = out.with_suffix(".raw.wav")
             with wave.open(str(raw), "wb") as w:
-                voice.synthesize_wav(text, w)
+                if _chosen["speed"] != 1.0 and syn_config:
+                    voice.synthesize_wav(text, w, syn_config=syn_config(length_scale=1 / _chosen["speed"]))   # longer scale = slower
+                else:
+                    voice.synthesize_wav(text, w)
             _pad(raw, out)
             raw.unlink()
     finally:
@@ -143,7 +163,7 @@ def _render_espeak(text, out):
     raw = out.with_suffix(".raw.wav")
     voice = os.environ.get("PIPLAYER_TTS_VOICE", "en-us+f3")
     # argv list, no shell: the text can never be run as a command. "--" stops a text starting with "-" being read as an option.
-    subprocess.run([ESPEAK, "-v", voice, "-s", "150", "-p", "55", "-w", str(raw), "--", text],
+    subprocess.run([ESPEAK, "-v", voice, "-s", str(round(150 * _chosen["speed"])), "-p", "55", "-w", str(raw), "--", text],
                    check=True, capture_output=True, timeout=15)
     _pad(raw, out)
     raw.unlink()

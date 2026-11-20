@@ -58,6 +58,57 @@ function paintArt(box, it) {
   box.replaceChildren();
   if (src) { const i = el('img'); i.decoding = 'async'; i.onload = () => i.classList.add('in'); i.src = src; i.alt = ''; box.append(i) }
   else box.textContent = it ? (it.title || '?')[0] : '♪';
+  if (box.classList.contains('big')) { const u = eqUI || buildEq(); box.append(u.face, u.btn); paintEq() }   // the equalizer lives on the back of the big cover
+}
+
+// ---- equalizer: the big cover flips over to reveal it (presets + 5 bands); state arrives in S.eq ----
+const EQ_PRESETS = [['flat', 'Flat'], ['bass', 'Bass'], ['vocal', 'Vocal'], ['treble', 'Treble'], ['loud', 'Loud']];
+const EQ_LABELS = ['60', '230', '910', '3.6k', '14k'];
+const eqText = v => (v > 0 ? '+' : '') + Number(v).toFixed(1).replace(/\.0$/, '');
+let eqUI = null, eqFlipping = false, eqTimer = 0;
+function buildEq() {
+  const face = el('div', 'eq-face'), chips = el('div', 'eq-chips'), bands = el('div', 'eq-bands'), btn = el('button', 'flip-btn');
+  face.append(el('b', 'eq-title', 'Equalizer'), chips, bands);
+  EQ_PRESETS.forEach(([id, t]) => { const b = el('button', 'eq-chip', t); b.type = 'button'; b.dataset.preset = id; chips.append(b) });
+  EQ_LABELS.forEach((t, i) => {
+    const col = el('label', 'eq-col'), r = el('input'), v = el('em', '', '0');
+    r.type = 'range'; r.min = -12; r.max = 12; r.step = 0.5; r.value = 0; r.setAttribute('aria-label', t + ' Hz gain');
+    col.append(v, r, el('span', '', t)); bands.append(col);
+  });
+  chips.onclick = e => { const b = e.target.closest('button'); if (b) sendEq({preset: b.dataset.preset}) };
+  bands.addEventListener('input', e => {
+    e.target.previousElementSibling.textContent = eqText(e.target.value);
+    clearTimeout(eqTimer); eqTimer = setTimeout(() => sendEq({gains: [...bands.querySelectorAll('input')].map(x => +x.value)}), 120);
+  });
+  btn.type = 'button'; btn.setAttribute('aria-pressed', 'false'); btn.title = btn.ariaLabel = 'Equalizer';
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>';
+  btn.onclick = e => { e.stopPropagation(); flipCover(btn.parentElement) };
+  return eqUI = {face, btn, chips, bands};
+}
+async function flipCover(art) {                          // turn the cover edge-on, swap the face, turn it back
+  if (eqFlipping || !art) return;
+  eqFlipping = true;
+  const T = a => `perspective(900px) rotateY(${a}deg)`, swap = () => {
+    const on = art.classList.toggle('eq-on'), b = eqUI.btn;
+    b.setAttribute('aria-pressed', on); b.title = b.ariaLabel = on ? 'Back to cover' : 'Equalizer';
+  };
+  try {
+    if (reduceMotion.matches) return swap();
+    const a1 = art.animate([{transform: T(0)}, {transform: T(90)}], {duration: 170, easing: 'ease-in', fill: 'forwards'});
+    await a1.finished; swap();
+    art.animate([{transform: T(-90)}, {transform: T(0)}], {duration: 190, easing: 'ease-out'}); a1.cancel();
+    await new Promise(r => setTimeout(r, 190));
+  } finally { eqFlipping = false }
+}
+function paintEq() {
+  const eq = S.eq; if (!eq || !eqUI) return;
+  eqUI.chips.querySelectorAll('button').forEach(b => { const on = b.dataset.preset === eq.preset; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on) });
+  if (eqUI.bands.contains(document.activeElement)) return;               // don't fight a slider being dragged
+  eqUI.bands.querySelectorAll('input').forEach((r, i) => { r.value = eq.gains[i]; r.previousElementSibling.textContent = eqText(r.value) });
+}
+async function sendEq(body) {
+  const r = await api('eq', 'POST', body).catch(() => ({error: 'Request failed'}));
+  if (r && r.error) toast(r.error);
 }
 
 // ---- theme (.dark class, like shadcn) ----
@@ -148,10 +199,12 @@ function paintVoices(d) {
   }
   sel.value = (d.voices || []).includes(d.voice) ? d.voice : '';
 }
+const paintSpeed = () => { fill(doorForm.speed); $('#speedval').textContent = Number(doorForm.speed.value).toFixed(2).replace(/0$/, '') + '×' };
+doorForm.speed.addEventListener('input', paintSpeed);
 function showDoorErr(msg) { const e = $('#doorerr'); e.textContent = msg || ''; e.hidden = !msg }
 const hoursDim = () => {
   ['#hoursrow', '#faderow', '#fadeoutrow'].forEach(id => $(id).classList.toggle('off', !doorForm.autoplay.checked));
-  ['#welcomerow', '#reminderrow', '#voicerow', '#duckrow', '#risesrow'].forEach(id => $(id).classList.toggle('off', !doorForm.announce.checked));
+  ['#welcomerow', '#reminderrow', '#voicerow', '#speedrow', '#duckrow', '#risesrow'].forEach(id => $(id).classList.toggle('off', !doorForm.announce.checked));
 };
 doorForm.autoplay.addEventListener('change', hoursDim);
 doorForm.announce.addEventListener('change', hoursDim);
@@ -165,7 +218,7 @@ function paintDoors(force) {
   if (!force && f.contains(document.activeElement)) return;          // never overwrite what's being typed
   f.male.value = d.pins.male ?? ''; f.female.value = d.pins.female ?? '';
   f.autoplay.checked = d.autoplay; f.from.value = d.from; f.to.value = d.to; f.fade.value = String(d.fade ?? 5); f.fadeout.value = String(d.fadeout ?? 3);
-  paintVoices(d); f.duck.value = String(d.duck ?? 30); f.rise.value = String(d.rise ?? 2);
+  paintVoices(d); f.speed.value = String(d.speed ?? 1); paintSpeed(); f.duck.value = String(d.duck ?? 30); f.rise.value = String(d.rise ?? 2);
   f.announce.checked = d.announce !== false; f.welcome.value = d.welcome ?? ''; f.reminder.value = d.reminder ?? '';
   $('#speecherr').hidden = d.speech !== false;                   // shown only while the speech engine is missing
   hoursDim();
@@ -178,7 +231,7 @@ async function saveDoors() {
   const f = doorForm, num = v => v === '' ? null : Number(v), seq = ++saveSeq;
   showDoorErr();
   const r = await api('doors', 'POST', {pins: {male: num(f.male.value), female: num(f.female.value)},
-    autoplay: f.autoplay.checked, from: f.from.value, to: f.to.value, fade: Number(f.fade.value), fadeout: Number(f.fadeout.value), duck: Number(f.duck.value), rise: Number(f.rise.value), voice: f.voice.value,
+    autoplay: f.autoplay.checked, from: f.from.value, to: f.to.value, fade: Number(f.fade.value), fadeout: Number(f.fadeout.value), duck: Number(f.duck.value), rise: Number(f.rise.value), voice: f.voice.value, speed: Number(f.speed.value),
     announce: f.announce.checked, welcome: f.welcome.value, reminder: f.reminder.value}).catch(() => ({error: 'Request failed'}));
   if (seq !== saveSeq) return;                                       // a newer save is in flight
   if (r.error) return showDoorErr(r.error);
@@ -700,6 +753,7 @@ function setProg(f) {                    // scaleX on the compositor; jumps (see
 function render() {
   renderRooms();
   paintDoors();
+  paintEq();
   const cur = S.current, live = cur && cur.kind === 'radio', busy = S.playing && !S.paused;
   document.body.classList.toggle('np-idle', !cur);          // desktop: no mini player while nothing is queued
   npResize();

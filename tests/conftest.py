@@ -36,3 +36,12 @@ def wait_for(fn, timeout=3):
             return True
         time.sleep(0.05)
     return False
+
+
+@pytest.fixture(autouse=True)
+def _fresh_search_cache():
+    """The YouTube / SoundCloud search cache is module-wide: every test starts and ends with it empty."""
+    from piplayer import api
+    api._search_cache.clear()
+    yield
+    api._search_cache.clear()

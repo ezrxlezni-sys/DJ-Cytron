@@ -124,14 +124,14 @@
     </section>
 
     <section id="settings" class="pane">
-      <header class="pane-head"><div><h1>Settings</h1><p>Restroom door sensors. Reed switch between each GPIO pin and GND.</p></div><span class="badge" id="gpiostate"></span></header>
+      <header class="pane-head"><div><h1>Settings</h1><p>Door sensors, music automation, spoken announcements and the Pi itself.</p></div><span class="badge" id="gpiostate"></span></header>
       <div class="scard">
         <div class="form-err" id="gpioerr" hidden></div>
 
         <form class="sform" id="doorform" autocomplete="off">
           <div class="sgroup">
             <div class="slabel">Sensors</div>
-            <label class="srow"><span class="srow-text"><b>Male door</b><small>GPIO pin (BCM)</small></span>
+            <label class="srow"><span class="srow-text"><b>Male door</b><small>GPIO pin (BCM). Reed switch between the pin and GND.</small></span>
               <input class="input pin" name="male" type="number" min="2" max="27" inputmode="numeric" placeholder="12" aria-label="Male door pin"></label>
             <label class="srow"><span class="srow-text"><b>Female door</b><small>GPIO pin (BCM)</small></span>
               <input class="input pin" name="female" type="number" min="2" max="27" inputmode="numeric" placeholder="13" aria-label="Female door pin"></label>
@@ -151,21 +151,31 @@
 
           <div class="sgroup" id="announcegroup">
             <div class="slabel">Announcements</div>
-            <div class="form-err" id="speecherr" hidden>Spoken messages need a voice on the Pi: <code>pip install piper-tts</code> (see the door announcements guide) or <code>sudo apt install espeak-ng</code></div>
-            <label class="srow"><span class="srow-text"><b>Speak at the doors</b><small>A welcome when a door closes and a reminder when it opens. Only during the active hours. The music dips while a message plays, and a welcome plays before the music starts.</small></span>
+            <label class="srow"><span class="srow-text"><b>Speak at the doors</b><small>A welcome when a door closes and a reminder when it opens. Only during the active hours. A welcome plays before the music starts.</small></span>
               <input type="checkbox" name="announce" role="switch"></label>
+            <div class="srow srow-msg srow-hours" id="welcomerow"><span class="srow-text"><b>Welcome</b><small>Said when a door closes. One message per line: a different one is said each time. <code>{greeting}</code> becomes Good morning, afternoon or evening. Leave empty for none.</small></span>
+              <div class="msg"><textarea class="input" name="welcome" rows="2" autocomplete="off" spellcheck="true" aria-label="Welcome messages, one per line"></textarea>
+                <button class="btn outline sm icon" type="button" data-say="welcome" aria-label="Play a welcome message" title="Play"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11.04-6.86a1 1 0 0 0 0-1.72L9.5 4.28A1 1 0 0 0 8 5.14Z"/></svg></button></div></div>
+            <div class="srow srow-msg srow-hours" id="reminderrow"><span class="srow-text"><b>Reminder</b><small>Said when a door opens. One message per line, same as the welcome. Leave empty for none.</small></span>
+              <div class="msg"><textarea class="input" name="reminder" rows="2" autocomplete="off" spellcheck="true" aria-label="Reminder messages, one per line"></textarea>
+                <button class="btn outline sm icon" type="button" data-say="reminder" aria-label="Play a reminder message" title="Play"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11.04-6.86a1 1 0 0 0 0-1.72L9.5 4.28A1 1 0 0 0 8 5.14Z"/></svg></button></div></div>
+          </div>
+
+          <div class="sgroup" id="voicegroup">
+            <div class="slabel">Voice</div>
+            <div class="form-err" id="speecherr" hidden>Spoken messages need a voice on the Pi: <code>pip install piper-tts</code> (see the door announcements guide) or <code>sudo apt install espeak-ng</code></div>
             <div class="srow srow-hours" id="voicerow" role="group" aria-label="Voice"><span class="srow-text"><b>Voice</b><small>Who reads the messages. Natural voices need Piper; changing it prepares the messages again.</small></span>
               <div class="hours"><select name="voice" aria-label="Voice"></select></div></div>
-            <div class="srow srow-hours" id="duckrow" role="group" aria-label="Music level during a message"><span class="srow-text"><b>Music during a message</b><small>How loud the music stays while a message is spoken over it.</small></span>
+            <div class="srow srow-hours" id="speedrow" role="group" aria-label="Speaking speed"><span class="srow-text"><b>Speaking speed</b><small>How fast the messages are spoken. Press play on a message to hear it.</small></span>
+              <div class="hours"><input type="range" name="speed" min="0.5" max="1.5" step="0.05" value="1" aria-label="Speaking speed"><em id="speedval">1×</em></div></div>
+          </div>
+
+          <div class="sgroup" id="duckgroup">
+            <div class="slabel">Music during a message</div>
+            <div class="srow srow-hours" id="duckrow" role="group" aria-label="Music level during a message"><span class="srow-text"><b>Music level</b><small>How loud the music stays while a message is spoken over it.</small></span>
               <div class="hours"><select name="duck" aria-label="Music level during a message"></select></div></div>
             <div class="srow srow-hours" id="risesrow" role="group" aria-label="Music return time"><span class="srow-text"><b>Music comes back</b><small>How long the music takes to return to full volume after a message.</small></span>
               <div class="hours"><select name="rise" aria-label="Music return time"></select></div></div>
-            <div class="srow srow-msg srow-hours" id="welcomerow"><span class="srow-text"><b>Welcome</b><small>Said when a door closes. Leave empty for none.</small></span>
-              <div class="msg"><input class="input" name="welcome" type="text" maxlength="160" autocomplete="off" aria-label="Welcome message">
-                <button class="btn outline sm icon" type="button" data-say="welcome" aria-label="Play the welcome message" title="Play"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11.04-6.86a1 1 0 0 0 0-1.72L9.5 4.28A1 1 0 0 0 8 5.14Z"/></svg></button></div></div>
-            <div class="srow srow-msg srow-hours" id="reminderrow"><span class="srow-text"><b>Reminder</b><small>Said when a door opens. Leave empty for none.</small></span>
-              <div class="msg"><input class="input" name="reminder" type="text" maxlength="160" autocomplete="off" aria-label="Reminder message">
-                <button class="btn outline sm icon" type="button" data-say="reminder" aria-label="Play the reminder message" title="Play"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11.04-6.86a1 1 0 0 0 0-1.72L9.5 4.28A1 1 0 0 0 8 5.14Z"/></svg></button></div></div>
           </div>
 
           <div class="form-err" id="doorerr" hidden></div>

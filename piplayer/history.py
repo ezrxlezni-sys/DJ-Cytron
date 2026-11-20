@@ -41,7 +41,7 @@ class HistoryStore:
             e["last"] = time.time()
             data[item["id"]] = e
             if len(data) > MAX_ENTRIES:   # forget the least recently played
-                for k in sorted(data, key=lambda k: data[k]["last"])[:len(data) - MAX_ENTRIES]:
+                for k in sorted(data, key=lambda k: data[k].get("last", 0))[:len(data) - MAX_ENTRIES]:
                     del data[k]
             self._write(data)
 
@@ -52,15 +52,15 @@ class HistoryStore:
 
     def _entries(self):
         with self._lock:
-            return list(self._read().values())
+            return [e for e in self._read().values() if isinstance(e, dict) and e.get("id")]
 
     def recent(self, n=8):
-        return sorted(self._entries(), key=lambda e: e["last"], reverse=True)[:n]
+        return sorted(self._entries(), key=lambda e: e.get("last", 0), reverse=True)[:n]
 
     def top(self, n=8):
         """Most played first; ties go to whichever was played last. Needs at least two plays to count."""
         es = [e for e in self._entries() if e.get("plays", 0) >= 2]
-        return sorted(es, key=lambda e: (e["plays"], e["last"]), reverse=True)[:n]
+        return sorted(es, key=lambda e: (e["plays"], e.get("last", 0)), reverse=True)[:n]
 
     def seeds(self, n=2):
         """Track ids to base suggestions on: the favourite plus the latest."""

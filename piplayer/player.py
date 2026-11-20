@@ -14,6 +14,8 @@ import subprocess
 import threading
 import time
 
+from . import equalizer
+
 SINK = "@DEFAULT_AUDIO_SINK@"
 DEFAULT_VOLUME = 70
 RADIO_RETRIES = 3                  # reconnect attempts for a dropped live stream
@@ -54,7 +56,9 @@ class Player:
             "volume": volume, "position": 0, "duration": None,
             "icy": None, "error": None, "held": False,
             "repeat": "off", "shuffle": False,
+            "eq": {"preset": "flat", "gains": [0.0] * len(equalizer.BANDS)},
         }
+        self._af = ""                         # the equalizer filter currently wanted in mpv (re-applied after a restart)
         self._gen = 0                         # bumps on every play; stale loads are dropped
         self._played = set()                  # shuffle: indices already heard this round
         self._history = []                    # shuffle: where Previous goes back to
@@ -65,10 +69,14 @@ class Player:
         self.watchers = 0                     # open browser tabs; external volume changes are only polled while > 0
         self._proc = None
         self._sock = None
-        self._start_mpv()
         self._sys_target = None               # latest requested system volume, applied by one worker
         self._sys_event = threading.Event()
         threading.Thread(target=self._volume_worker, daemon=True, name="sys-volume").start()
+        try:
+            self._start_mpv()
+        except Exception as e:                # mpv missing or slow to start: the app still comes up and keeps retrying
+            self.state["error"] = f"Audio engine unavailable: {e}"[:200]
+            threading.Thread(target=self._respawn, args=(False,), daemon=True, name="mpv-respawn").start()
         self.set_volume(volume)               # every start begins at the default; the user can raise it to 100
 
     # ---------- mpv process / IPC ----------
@@ -101,6 +109,8 @@ class Player:
         sock.connect(self.socket_path)
         with self.lock:
             self._proc, self._sock = proc, sock
+        if self._af:
+            self._send(["set_property", "af", self._af])
         for i, prop in enumerate(["pause", "volume", "time-pos", "duration",
                                   "metadata", "idle-active", "core-idle"], 1):
             self._send(["observe_property", i, prop])
@@ -403,7 +413,9 @@ class Player:
         return bool(on)
 
     def toggle(self):
-        if self.state["held"]:
+        with self.lock:
+            held = self.state["held"]
+        if held:
             self.hold(False)
         else:
             self._send(["cycle", "pause"])
@@ -456,6 +468,25 @@ class Player:
             self._send(["set_property", "volume", level])
             if i < n:
                 time.sleep(secs / n)
+
+    def set_eq(self, gains=None, preset=None):
+        """Apply an equalizer setting live: a preset name, or a list of 5 gains in dB. Returns the new state, or None
+        when the input is not valid."""
+        if preset is not None:
+            if preset not in equalizer.PRESETS:
+                return None
+            gains = [float(g) for g in equalizer.PRESETS[preset]]
+        else:
+            gains = equalizer.clean_gains(gains)
+            if gains is None:
+                return None
+        with self.lock:
+            self._af = equalizer.build_filter(gains)
+            self.state["eq"] = {"preset": equalizer.preset_for(gains), "gains": gains}
+            eq = dict(self.state["eq"])
+        self._send(["set_property", "af", self._af])
+        self.on_change()
+        return eq
 
     def seek(self, seconds):
         self._send(["seek", float(seconds), "absolute"])

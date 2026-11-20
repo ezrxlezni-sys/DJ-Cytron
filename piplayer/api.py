@@ -1,19 +1,23 @@
 """HTTP API (JSON + server-sent events)."""
 import ipaddress
 import json
+import logging
 import math
 import os
 import shutil
 import subprocess
 import threading
+import time
 from urllib.parse import urlparse
 
 from flask import Blueprint, Response, current_app, jsonify, request
 
 from .playlists import clean_items
+from .safety import only_clean
 from .stations import as_queue_item
 
 bp = Blueprint("api", __name__, url_prefix="/api")
+log = logging.getLogger("piplayer.api")
 
 
 def _svc():
@@ -24,6 +28,11 @@ def _body():
     """The JSON request body as a dict (anything else counts as empty)."""
     d = request.get_json(silent=True)
     return d if isinstance(d, dict) else {}
+
+
+def _text(v):
+    """A stripped string, or "" for anything that is not a string (a number or list must not crash the route)."""
+    return v.strip() if isinstance(v, str) else ""
 
 
 def _num(v):
@@ -74,9 +83,20 @@ def state():
     return jsonify(_snapshot())
 
 
+MAX_EVENT_STREAMS = 48                         # each open tab holds a server thread: keep some free for ordinary requests
+_streams = threading.BoundedSemaphore(MAX_EVENT_STREAMS)
+
+
 @bp.get("/events")
 def events():
     svc = _svc()
+    if not _streams.acquire(blocking=False):
+        return jsonify(error="too many open pages"), 503
+    released = threading.Lock()
+
+    def release():
+        if released.acquire(blocking=False):
+            _streams.release()
 
     def stream():
         seen = -1
@@ -92,9 +112,12 @@ def events():
         finally:
             with svc.player.lock:
                 svc.player.watchers -= 1
+            release()
 
-    return Response(stream(), mimetype="text/event-stream",
+    resp = Response(stream(), mimetype="text/event-stream",
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    resp.call_on_close(release)
+    return resp
 
 
 # ---- stations ----
@@ -106,7 +129,7 @@ def stations():
 @bp.post("/stations")
 def add_station():
     d = _body()
-    title, url = (d.get("title") or "").strip(), (d.get("url") or "").strip()
+    title, url = _text(d.get("title")), _text(d.get("url"))
     if not title or not url.startswith(("http://", "https://")):
         return jsonify(error="title and http(s) url required"), 400
     return jsonify(_svc().stations.add(title, url))
@@ -115,7 +138,7 @@ def add_station():
 @bp.put("/stations/<sid>")
 def update_station(sid):
     d = _body()
-    title, url = (d.get("title") or "").strip(), (d.get("url") or "").strip()
+    title, url = _text(d.get("title")), _text(d.get("url"))
     if not title or not url.startswith(("http://", "https://")):
         return jsonify(error="title and http(s) url required"), 400
     items = _svc().stations.update(sid, title, url)
@@ -124,7 +147,8 @@ def update_station(sid):
 
 @bp.delete("/stations/<sid>")
 def delete_station(sid):
-    return jsonify(_svc().stations.remove(sid))
+    items = _svc().stations.remove(sid)
+    return (jsonify(items), 200) if items is not None else (jsonify(error="unknown station"), 404)
 
 
 # ---- listen on another device (phone / laptop) ----
@@ -145,6 +169,12 @@ def listen():
     if not _listeners.acquire(blocking=False):
         return jsonify(error="too many listeners"), 503
 
+    released = threading.Lock()           # a permit is given back exactly once
+
+    def release():
+        if released.acquire(blocking=False):
+            _listeners.release()
+
     def stream():
         rec = enc = None
         try:
@@ -161,10 +191,12 @@ def listen():
                 if p:
                     p.kill()
                     p.wait()
-            _listeners.release()
+            release()
 
-    return Response(stream(), mimetype="audio/mpeg",
+    resp = Response(stream(), mimetype="audio/mpeg",
                     headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
+    resp.call_on_close(release)           # also runs when the generator never started (a generator that never ran has no finally)
+    return resp
 
 
 # ---- playlists ----
@@ -183,7 +215,8 @@ def playlist_create():
     name = _pl_name(d)
     if not name:
         return jsonify(error="name required"), 400
-    _svc().playlists.create(name, d.get("items") or [])
+    items = d.get("items")
+    _svc().playlists.create(name, items if isinstance(items, list) else [])
     return jsonify(_svc().playlists.all())
 
 
@@ -218,6 +251,26 @@ def playlist_remove_item(pid, i):
 
 
 # ---- search ----
+SEARCH_TTL, SEARCH_KEEP = 1800, 100            # yt-dlp searches are slow on a Pi: repeats (shelves, back/forward) reuse the answer
+_search_cache = {}                             # (source, query) -> (expires_at, items)
+_search_lock = threading.Lock()                # request threads share the cache
+
+
+def _cached_search(source, q):
+    now = time.time()
+    with _search_lock:
+        hit = _search_cache.get((source, q.lower()))
+    if hit and hit[0] > now:
+        return hit[1]
+    items = _svc().search_sc(q, "songs") if source == "soundcloud" else _svc().search_yt(q, "songs")      # slow: outside the lock
+    if items:
+        with _search_lock:
+            for k in [k for k, v in _search_cache.items() if v[0] <= now] or (list(_search_cache)[:1] if len(_search_cache) >= SEARCH_KEEP else []):
+                _search_cache.pop(k, None)
+            _search_cache[(source, q.lower())] = (now + SEARCH_TTL, items)
+    return items
+
+
 @bp.get("/search")
 def search():
     q = request.args.get("q", "").strip()
@@ -226,22 +279,23 @@ def search():
     kind = request.args.get("type", "songs")
     try:
         source = request.args.get("source")
-        if source == "soundcloud":
-            return jsonify(_svc().search_sc(q, "songs"))
-        if source == "youtube":
-            return jsonify(_svc().search_yt(q, "songs"))
+        if source in ("soundcloud", "youtube"):
+            items = _cached_search(source, q)
+            return jsonify(only_clean(items) if request.args.get("safe") == "1" else items)
         return jsonify(_svc().search(q, kind if kind in ("songs", "videos") else "songs"))
-    except Exception as e:
-        return jsonify(error=str(e)), 502
+    except Exception:
+        log.warning("search failed (%r)", q, exc_info=True)
+        return jsonify(error="Search failed. Try again in a moment."), 502
 
 
 @bp.get("/trending")
 def trending():
     """The country's YouTube Music chart (cached for an hour)."""
     try:
-        return jsonify(_svc().trending())
-    except Exception as e:
-        return jsonify(error=str(e)), 502
+        return jsonify(only_clean(_svc().trending()))
+    except Exception:
+        log.warning("trending failed", exc_info=True)
+        return jsonify(error="Trending is unavailable right now."), 502
 
 
 @bp.get("/history")
@@ -281,10 +335,11 @@ def suggested():
                 out.append(lst[i])
     if not out:
         try:
-            out = svc.search("top hits", "songs")
-        except Exception as e:
-            return jsonify(error=str(e)), 502
-    return jsonify(out[:10])
+            out = only_clean(svc.search("top hits", "songs"))
+        except Exception:
+            log.warning("suggestions failed", exc_info=True)
+            return jsonify(error="Suggestions are unavailable right now."), 502
+    return jsonify(only_clean(out)[:10])
 
 
 # ---- playback ----
@@ -363,14 +418,29 @@ def control(action):
     elif action == "seek" and _num(d.get("seconds")) is not None:
         p.seek(max(0.0, _num(d["seconds"])))
     elif action == "volume" and _num(d.get("value")) is not None:
-        svc.settings.set("volume", p.set_volume(int(_num(d["value"]))))
+        p.set_volume(int(_num(d["value"])))        # not saved: every start begins at the default volume
     elif action == "repeat" and "value" in d:
         p.set_repeat(d["value"])
-    elif action == "shuffle" and "value" in d:
+    elif action == "shuffle" and isinstance(d.get("value"), bool):      # "false" is truthy: only a real boolean counts
         p.set_shuffle(d["value"])
     else:
         return jsonify(error="bad action"), 400
     return jsonify(ok=True)
+
+
+# ---- equalizer ----
+@bp.post("/eq")
+def eq():
+    """{"preset": "bass"} or {"gains": [5 numbers, dB]}. Applied live and remembered across restarts."""
+    svc, d = _svc(), _body()
+    if "preset" in d:
+        new = svc.player.set_eq(preset=d["preset"])
+    else:
+        new = svc.player.set_eq(gains=d.get("gains"))
+    if new is None:
+        return jsonify(error="Unknown preset, or gains must be 5 numbers between -12 and 12 dB"), 400
+    svc.settings.set("eq", new["gains"])
+    return jsonify(ok=True, eq=new)
 
 
 # ---- system power ----

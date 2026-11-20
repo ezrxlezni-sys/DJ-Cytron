@@ -26,7 +26,7 @@ class Services:
         self.stations = StationStore(cfg.data_dir / "stations.json")
         self.playlists = PlaylistStore(cfg.data_dir / "playlists.json")
         self.history = HistoryStore(cfg.data_dir / "history.json")
-        self.settings = Settings(cfg.data_dir / "settings.json", {"volume": DEFAULT_VOLUME, "bathrooms": {}})
+        self.settings = Settings(cfg.data_dir / "settings.json", {"bathrooms": {}})
         self.search = search or ytm.search
         self.trending = trending or (lambda: ytm.trending())
         self.suggest = suggest or (lambda seeds: ytm.suggest(seeds))
@@ -42,6 +42,9 @@ class Services:
         self.bathrooms = Bathrooms(self)
         self.player = Player(self._resolve, cfg.mpv_cmd, cfg.socket_path,
                              DEFAULT_VOLUME, on_change=self.notify, on_play=self.history.record)
+        saved_eq = self.settings.get("eq")
+        if saved_eq:
+            self.player.set_eq(gains=saved_eq)            # the equalizer setting survives restarts
         q = self.queue_state.data
         self.player.restore(clean_items(q.get("queue")), q.get("index", -1), q.get("repeat", "off"), q.get("shuffle", False))
 

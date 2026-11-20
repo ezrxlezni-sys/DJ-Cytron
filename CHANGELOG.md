@@ -6,6 +6,12 @@ restart, and hard-refresh the browser.
 
 ## 2026-11-16
 
+### Announcements: speed, variants, greeting
+- **Speaking speed** slider (0.5x to 1.5x) for both the welcome and the reminder.
+- Each message can have several lines; a different one is said each time. `{greeting}` becomes Good morning / afternoon / evening.
+- Settings page regrouped: Sensors, Automation, Announcements, Voice, Music during a message.
+- The spoken-file cache keeps 150 files (was 30) so every variant stays ready.
+
 ### Documentation restructured
 - The docs now live in six folders under `docs/`: `guide/` (users), `admin/` (running the Pi), `doors/` (sensors, autoplay,
   announcements), `reference/` (API, configuration, data files, glossary), `architecture/` and `contributing/`.
