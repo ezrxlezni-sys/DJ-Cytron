@@ -14,6 +14,13 @@ FAKE = str(Path(__file__).parent / "fake_mpv.py")
 SONG = {"kind": "ytm", "id": "abc", "title": "Song", "artist": "Artist"}
 
 
+@pytest.fixture(autouse=True)
+def _pause_when_empty(monkeypatch):
+    """Most door tests are about pausing; the quiet idle music (default 30 %) has its own tests that set `idle`."""
+    from piplayer import bathrooms
+    monkeypatch.setitem(bathrooms.DEFAULTS, "idle", 0)
+
+
 @pytest.fixture
 def app(tmp_path):
     cfg = Config(host="127.0.0.1", port=0, data_dir=tmp_path,

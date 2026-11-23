@@ -34,6 +34,7 @@ The Settings tab has one form for the door sensors. The badge at the top right s
 | | **Voice** | *Automatic* (Piper if installed, otherwise espeak-ng) or any installed voice. |
 | | **Music during a message** | How loud the music stays while a message plays over it: No dip, 70 %, 50 %, 30 % (default), 15 %, Silent. |
 | | **Music comes back** | How fast the music returns to full volume after a message: Instantly, 1, 2 (default), 4 or 8 seconds. |
+| | **Delay after the welcome** | Minutes and seconds after the welcome before the reminder is said (default 1 minute). |
 | | **Welcome / Reminder** | The two messages (up to 160 characters; empty = say nothing). The ▶ button plays the saved message on the Pi's speakers. |
 | Data | **Clear history** | Forgets what was played on this Pi (used for suggestions) and your recent searches in this browser. |
 
@@ -45,7 +46,8 @@ If no speech engine is installed, Settings shows a notice. Ask the administrator
 | When | What you will notice |
 |---|---|
 | A door closes (someone goes in) | The welcome message is spoken. If autoplay is on, the music then starts or resumes, rising gently to your volume. |
-| A door opens (someone comes out) | The reminder is spoken (over the music, which dips while it talks). If that was the last occupied room and autoplay is on, the music first fades out and pauses. |
+| A set time after the welcome (**Delay after the welcome**) | The reminder is spoken over the music (which dips while it talks), if the door is still closed. |
+| A door opens (someone comes out) | A pending reminder is cancelled and the goodbye is spoken. If that was the last occupied room and autoplay is on, the music fades down to the **Music when nobody is in** level (30 % by default; "Pause" stops it instead) and keeps playing quietly. It comes back up when a door closes. |
 | Closing time passes | Music fades out and pauses; a radio stream is stopped, so it does not stream all night. |
 | You press Play or Pause yourself | It is respected until the next door change. |
 

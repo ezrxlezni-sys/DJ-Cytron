@@ -13,9 +13,15 @@ Fade-in: when a door closing starts or resumes the music, the volume drops to a 
 it was (`fade` seconds, 0 = off). Moving the volume yourself during a fade ends it; the volume is put back if the door
 opens again halfway.
 
-Announcements: when a door closes a welcome message is spoken (then the music starts and fades in); when a door opens a
-reminder is spoken (after the music paused, or over it, ducked). Only inside the active hours, never at start-up or when a
-sensor is rewired, and each message can be edited or emptied. Speech comes from piplayer/speech.py (espeak-ng).
+Announcements: when a door closes a welcome message is spoken (then the music starts and fades in); `reminder_delay`
+seconds after a door closed (minutes + seconds in Settings) the reminder is spoken over the music, ducked, provided that
+door is still closed. Only inside the active hours, never at start-up or when a sensor is rewired, and each message can
+be edited or emptied. Speech comes from piplayer/speech.py (espeak-ng).
+
+Idle music: when nobody is inside (inside the active hours, autoplay on) the music does not stop: it keeps playing quietly
+at the `idle` level (30 % by default, mpv's own volume, 0 = pause as before) and comes back up when a door closes.
+
+Goodbye: when a door opens a `bye` message is spoken (over the music).
 
 Watchdog: a plain reed switch can't report that it was unplugged, so a room whose sensor shows no
 change for STALE_AFTER of opening time is flagged `stale` ("check sensor") in the snapshot.
@@ -38,8 +44,10 @@ BCM_PINS = range(2, 28)                       # usable GPIOs on the 40-pin heade
 STALE_AFTER = 4 * 3600                        # seconds of opening time without a change before "check sensor"
 DEFAULTS = {"autoplay": False, "from": "08:00", "to": "18:00", "fade": 5, "fadeout": 3, "announce": True,
             "welcome": "Thank you for choosing Cytron DJ. Enjoy the vibe!",
-            "reminder": "Please remember to flush and keep it clean.",
+            "reminder": "Please remember to flush and keep it clean.", "reminder_delay": 60,
+            "bye": "Thank you for visiting. See you again soon!", "idle": 30,
             "duck": 30, "rise": 2, "voice": "", "speed": 1.0}
+REMINDER_DELAY_MAX = 3600                     # seconds: the longest wait between a door closing and the reminder
 MESSAGE_MAX = 160                             # characters per announcement (each variant)
 MESSAGE_VARIANTS = 10                         # variants per message, one per line: a different one is said each time
 GREETINGS = {"morning": "Good morning", "afternoon": "Good afternoon", "evening": "Good evening"}   # for {greeting}
@@ -81,7 +89,10 @@ class Bathrooms:
         self._fade_lock = threading.Lock()    # guards the running fade
         self._fade_stop = None                # Event that ends the running fade
         self._fade_target = None              # the volume a running fade is heading for (to restore it if cut short)
-        self._out_idle = threading.Event()    # set whenever NO fade-out is running (the reminder waits for it)
+        self._idle_set = None                 # the idle level last applied
+        self._idling = False                  # nobody is in and the music is playing quietly at the idle level
+        self._reminders = {}                  # room -> Event that cancels its pending reminder (the door opened / closed again)
+        self._out_idle = threading.Event()    # set whenever NO fade-out is running (used by the music logic)
         self._out_idle.set()
 
     # ---------- configuration ----------
@@ -116,7 +127,15 @@ class Bathrooms:
             saved["autoplay"] = bool(patch["autoplay"])
         if "announce" in patch:
             saved["announce"] = bool(patch["announce"])
-        for key in ("welcome", "reminder"):
+        if "idle" in patch:
+            try:
+                idle = int(patch["idle"])
+            except (TypeError, ValueError):
+                return "Idle music level must be a number"
+            if not 0 <= idle <= 100:
+                return "Idle music level must be 0-100 %"
+            saved["idle"] = idle
+        for key in ("welcome", "reminder", "bye"):
             if key in patch:
                 if not isinstance(patch[key], str):
                     return "Messages must be text"
@@ -127,6 +146,14 @@ class Bathrooms:
                 if len(lines) > MESSAGE_VARIANTS:
                     return f"At most {MESSAGE_VARIANTS} messages (one per line)"
                 saved[key] = "\n".join(lines)
+        if "reminder_delay" in patch:
+            try:
+                delay = int(patch["reminder_delay"])
+            except (TypeError, ValueError):
+                return "Reminder delay must be a number of seconds"
+            if not 0 <= delay <= REMINDER_DELAY_MAX:
+                return f"Reminder delay must be 0 seconds to {REMINDER_DELAY_MAX // 60} minutes"
+            saved["reminder_delay"] = delay
         if "duck" in patch:
             try:
                 duck = int(patch["duck"])
@@ -176,7 +203,7 @@ class Bathrooms:
         speech.use_speed(saved.get("speed", 1.0))
         if "pins" in patch and (saved["pins"] != old_pins or self.error):
             self.start()                      # only on a real rewire (or to retry a failure): start() blanks the readings, which would pause the music
-        if "welcome" in patch or "reminder" in patch or "voice" in patch or "speed" in patch:
+        if "welcome" in patch or "reminder" in patch or "bye" in patch or "voice" in patch or "speed" in patch:
             self.prewarm()                    # render the edited message now, not at the door
         self.evaluate()
         self.svc.notify()
@@ -191,13 +218,17 @@ class Bathrooms:
             before = cur["occupied"]
             cur["occupied"], cur["since"] = occupied, time.time()
         self.svc.notify()
-        kind = self._announcement(before, occupied)
-        if kind == "welcome":                 # a door closed: say hello first, then the music starts (and fades in)
-            threading.Thread(target=self._welcome, daemon=True, name="announce").start()
+        self._cancel_reminder(room)           # a door that opens or closes again restarts the wait
+        welcomed = threading.Event()                  # set once the welcome has been spoken (or skipped): the delay counts from then
+        speaks = bool(self._announcement(before, occupied))
+        if before is not None and occupied:           # a real door closing (not a start-up reading): the reminder follows later
+            self._schedule_reminder(room, welcomed if speaks else None)
+        if speaks:                                    # a door closed: say hello first, then the music starts (and fades in)
+            threading.Thread(target=self._welcome, args=(welcomed,), daemon=True, name="announce").start()
             return
         self.evaluate()
-        if kind:                              # a door opened: the music has paused by now, then the reminder is spoken
-            threading.Thread(target=self._remind, daemon=True, name="announce").start()
+        if before is not None and occupied is False and self._bye_ok():     # a door opened: say goodbye over the (quieter) music
+            threading.Thread(target=self._bye, daemon=True, name="announce").start()
 
     def snapshot(self):
         with self._lock:
@@ -261,24 +292,58 @@ class Bathrooms:
             if not self.config()["autoplay"]:
                 if self._paused and self.svc.player.snapshot()["held"]:
                     self.svc.player.hold(False)           # don't leave a radio stream silent with nobody to wake it
+                if self._idling:
+                    self._idling = False
+                    self.svc.player.duck(False, up=0)     # back to the normal level straight away
                 self._playing = self._paused = None       # switched off: forget state, touch nothing else
                 self._fade_cancel()
                 return
-            want = self._wanted()
+            occupied = self._wanted()
+            idle = not occupied and self._idle_ok()       # nobody in: keep the music going, quietly
+            want = occupied or idle
             if want and self._playing and self._failed():
                 self._playing = None                      # the music we started died (stream down, unplayable track): try again
-            if want == self._playing:
+            if want == self._playing and idle == self._idling:
+                if idle and self._idle_level() != self._idle_set:
+                    self._idle_duck(0.5)                  # the level was changed in Settings
                 return
+            was_idling, was_playing = self._idling, self._playing
             self._playing = want
             if want and not self._out_idle.is_set():
                 self._fade_cancel()                       # someone is back mid fade-out: the music carries on at your volume
             try:
+                if idle:
+                    self._idling = True
+                    if was_playing:                       # the last visitor left: lower the music gradually, no pause
+                        self._fade_cancel()
+                        self._idle_duck(self.config()["fadeout"] * self.FADE_SCALE)
+                        return
+                    self._idle_duck(0)                    # start-up / start of the hours: begin quietly, no fade-in
+                    ok = self._play(fade=False)
+                    if ok is False:
+                        self._playing = None
+                    return
+                if was_idling:
+                    self._idling = False                  # a door closed: back up to the normal level
+                    self.svc.player.duck(False, up=self.config()["fade"] * self.FADE_SCALE)
                 ok = (self._play if want else self._halt)()
+                if not want and was_idling:
+                    self.svc.player.duck(False, up=0)     # the hours ended: the next start must not be quiet
             except Exception:
                 self._playing = None                      # never remember a start that did not happen: the next tick retries
                 raise
             if want and ok is False:
                 self._playing = None                      # nothing could be started (empty queue, no stations): retry later
+
+    def _idle_level(self):
+        return max(0, min(100, int(self.config()["idle"])))
+
+    def _idle_ok(self):
+        return bool(self.config()["autoplay"] and self._idle_level() > 0 and self._in_hours())
+
+    def _idle_duck(self, secs):
+        level = self._idle_set = self._idle_level()
+        self.svc.player.duck(True, level=level, down=secs)
 
     def _failed(self):
         """True when the player gave up (error shown, nothing playing or loading) some time after autoplay started it.
@@ -290,32 +355,35 @@ class Bathrooms:
         cur = snap["current"]
         return (cur["kind"], cur["id"]) if cur else None
 
-    def _play(self):
+    def _play(self, fade=True):
         try:
-            return self._start_music()
+            return self._start_music(fade)
         finally:
             if self._speech_lock.locked() and not self._ducked:
                 self._duck_music(True)             # music that starts while a message is being spoken stays under the voice
 
-    def _start_music(self):
+    def _start_music(self, fade=True):
         """Start or resume the music. Returns False when there was nothing to start."""
         p = self.svc.player
         snap = p.snapshot()
         self._tried = time.time()
         if snap["playing"] and snap["paused"]:             # paused or muted (by us, or by hand): carry on where it was
             self._paused = None
-            self._fade_begin()
+            if fade:
+                self._fade_begin()
             (p.hold if snap["held"] else p.pause)(False)   # instant either way
             return True
         self._paused = None
         if snap["playing"] or snap["loading"]:
             return True                                    # already playing something
         if snap["queue"]:
-            self._fade_begin()
+            if fade:
+                self._fade_begin()
             p.play_index(snap["index"] if 0 <= snap["index"] < len(snap["queue"]) else 0)
             return True
         if (st := next(iter(self.svc.stations.all()), None)):          # empty queue: first station
-            self._fade_begin()
+            if fade:
+                self._fade_begin()
             p.play_now([as_queue_item(st)])
             return True
         return False
@@ -367,29 +435,60 @@ class Bathrooms:
     def _all_texts(self):
         """Every wording that could be said (each variant, each greeting): all rendered ahead of time."""
         out = []
-        for kind in ("welcome", "reminder"):
+        for kind in ("welcome", "reminder", "bye"):
             for v in self._variants(kind):
                 out += [self._expand(v, part) for part in (GREETINGS if "{greeting}" in v else ("morning",))]
         return list(dict.fromkeys(out))
 
     def _announcement(self, before, occupied):
-        """'welcome' (a door closed) or 'reminder' (a door opened) when something should be said, else None.
-        Never for the first reading after start-up or a rewire (before / after is None), never outside the hours."""
-        if before is None or occupied is None:
+        """'welcome' when a door closed and it should be said, else None. Never for the first reading after start-up or
+        a rewire (before / after is None), never outside the hours."""
+        if before is None or not occupied:
             return None
-        kind = "welcome" if occupied else "reminder"
-        if not self.config()["announce"] or not self._variants(kind) or not self._in_hours() or not self._speech_ok():
+        if not self.config()["announce"] or not self._variants("welcome") or not self._in_hours() or not self._speech_ok():
             return None
-        return kind
+        return "welcome"
 
-    def _remind(self):
-        self._out_idle.wait(self.config()["fadeout"] * self.FADE_SCALE + 2)     # let the music fade out and pause first
-        self._say(self._text("reminder"))
+    def _bye_ok(self):
+        return bool(self.config()["announce"] and self._variants("bye") and self._in_hours() and self._speech_ok())
 
-    def _welcome(self):
+    def _bye(self):
+        self._say(self._text("bye"))
+
+    def _cancel_reminder(self, room):
+        gone = self._reminders.pop(room, None)
+        if gone:
+            gone.set()
+
+    def _schedule_reminder(self, room, welcomed=None):
+        """After a door closed: speak the reminder `reminder_delay` seconds after the welcome ended (after the door
+        closed when there is no welcome), if the door is still closed."""
+        c = self.config()
+        if not c["announce"] or not self._variants("reminder") or not self._in_hours() or not self._speech_ok():
+            return
+        cancel = self._reminders[room] = threading.Event()
+        delay = c["reminder_delay"] * self.FADE_SCALE
+        threading.Thread(target=self._remind, args=(room, cancel, delay, welcomed), daemon=True, name="reminder").start()
+
+    def _remind(self, room, cancel, delay, welcomed=None):
+        if welcomed is not None:
+            welcomed.wait(60)                 # the countdown starts when the welcome has finished
+        if cancel.is_set() or cancel.wait(delay) or self._reminders.get(room) is not cancel:
+            return                            # the door opened (or closed again) meanwhile
+        self._reminders.pop(room, None)
+        for _ in range(60):                   # the welcome may still be playing (short delay): wait for it, up to a minute
+            if not self._speech_lock.locked():
+                break
+            time.sleep(1 * self.FADE_SCALE)
+        if self.config()["announce"] and self._in_hours():
+            self._say(self._text("reminder"))
+
+    def _welcome(self, done=None):
         try:
             self._say(self._text("welcome"))
         finally:
+            if done:
+                done.set()
             self.evaluate()                   # start / resume the music (with the fade-in) once the welcome is done
 
     def _say(self, text):
@@ -415,7 +514,8 @@ class Bathrooms:
     def _duck_music(self, on):
         self._ducked = on
         c = self.config()
-        self.svc.player.duck(on, level=c["duck"], up=c["rise"])
+        rest = self._idle_level() if self._idling else 100             # the level the music returns to
+        self.svc.player.duck(on, level=min(c["duck"], rest), up=c["rise"], rest=rest)
 
     def prewarm(self):
         """Render both messages in the background so the door never waits for the voice."""
@@ -429,7 +529,7 @@ class Bathrooms:
 
     def announce_now(self, which):
         """Play one saved message now (the Settings preview buttons). Returns an error message, or None."""
-        if which not in ("welcome", "reminder"):
+        if which not in ("welcome", "reminder", "bye"):
             return "Unknown message"
         if not self._speech_ok():
             return "Speech needs a voice: pip install piper-tts (see docs/doors/announcements.md) or sudo apt install espeak-ng"

@@ -477,6 +477,6 @@ def doors():
 
 @bp.post("/doors/announce")
 def doors_announce():
-    """Preview a saved door message on the speakers: {"which": "welcome" | "reminder"}."""
+    """Preview a saved door message on the speakers: {"which": "welcome" | "reminder" | "bye"}."""
     err = _svc().bathrooms.announce_now(_body().get("which"))
     return (jsonify(error=err), 400) if err else jsonify(ok=True)

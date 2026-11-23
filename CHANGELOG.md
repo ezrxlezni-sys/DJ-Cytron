@@ -4,6 +4,18 @@ All notable changes. Dates are `YYYY-MM-DD`. Upgrading? After pulling, follow
 [Upgrading the app](docs/admin/maintenance.md#upgrading-the-app): install requirements, re-copy the systemd unit,
 restart, and hard-refresh the browser.
 
+## 2026-11-23
+
+### Goodbye message and quiet idle music
+- New **Goodbye** message (`bye`), spoken when a door opens.
+- With autoplay on, the music no longer pauses when every door is open: it keeps playing quietly at **Music when nobody is in**
+  (`idle`, 30 % by default, 0 = pause as before) and comes back up when a door closes.
+
+### Reminder after the door closes
+- The reminder is now spoken a set time **after a door closes** (new **Delay after the welcome** in Settings > Announcements, minutes +
+  seconds; `reminder_delay` in the API, default 60 s) instead of when it opens. It is skipped if the door opens first.
+  The welcome still plays when the door closes.
+
 ## 2026-11-16
 
 ### Announcements: speed, variants, greeting

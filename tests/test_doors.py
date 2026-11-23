@@ -331,7 +331,7 @@ class Speaker:
 
 def talking(app, hold=False, fail=False, hour=10, **settings):
     svc, made = setup_doors(app, hour=hour)
-    svc.settings.set("bathrooms", {"autoplay": True, "pins": {}, "fade": 0, "fadeout": 0, **settings})
+    svc.settings.set("bathrooms", {"autoplay": True, "pins": {}, "fade": 0, "fadeout": 0, "bye": "", **settings})
     b = svc.bathrooms
     b.speaker = Speaker(hold, fail)
     b._speech_ok = lambda: True
@@ -364,15 +364,38 @@ def test_welcome_is_spoken_before_the_music_starts(app):
     assert wait_for(lambda: (svc.player.snapshot()["current"] or {}).get("id") == "q1")
 
 
-def test_reminder_is_spoken_after_the_music_paused(app):
-    svc, b, sp = talking(app)
+def test_reminder_is_spoken_a_delay_after_the_door_closed(app):
+    svc, b, sp = talking(app, reminder_delay=1)
+    b.FADE_SCALE = 0.3                                         # a 0.3 second wait in the test
     svc.player.queue = [{"kind": "ytm", "id": "q1", "title": "One"}]
     b.set("male", True)
-    assert wait_for(lambda: svc.player.snapshot()["playing"])
-    b.set("male", False)                                       # the last visitor leaves
-    assert wait_for(lambda: len(sp.said) == 2)
+    assert wait_for(lambda: len(sp.said) == 1)                 # the welcome comes straight away
+    assert sp.said[0] == "Thank you for choosing Cytron DJ. Enjoy the vibe!"
+    assert wait_for(lambda: len(sp.said) == 2)                 # the reminder follows while the door is still closed
     assert sp.said[1] == "Please remember to flush and keep it clean."
-    assert paused(svc)
+    assert svc.player.snapshot()["playing"]
+
+
+def test_reminder_is_skipped_when_the_door_opens_first(app):
+    svc, b, sp = talking(app, reminder_delay=1)
+    b.FADE_SCALE = 0.5
+    b.set("male", True)
+    assert wait_for(lambda: len(sp.said) == 1)
+    b.set("male", False)                                       # left before the reminder was due
+    time.sleep(0.8)
+    assert len(sp.said) == 1
+    b.set("male", True); b.set("male", False); b.set("male", True)    # closing again restarts one wait, not two
+    time.sleep(0.8)
+    assert sp.said.count("Please remember to flush and keep it clean.") == 1
+
+
+def test_reminder_delay_setting_default_and_validation(client):
+    assert doors(client)["reminder_delay"] == 60
+    assert post(client, {"reminder_delay": 150}).status_code == 200 and doors(client)["reminder_delay"] == 150
+    for bad in (-1, 3601, "abc", None):
+        assert post(client, {"reminder_delay": bad}).status_code == 400
+    assert doors(client)["reminder_delay"] == 150
+    assert post(client, {"reminder_delay": 0}).status_code == 200 and doors(client)["reminder_delay"] == 0
 
 
 def test_message_over_playing_music_ducks_it_and_restores(app):
@@ -382,7 +405,7 @@ def test_message_over_playing_music_ducks_it_and_restores(app):
     sp.gate.set()
     assert wait_for(lambda: svc.player.snapshot()["playing"])
     sp.said.clear(); sp.started.clear(); sp.gate.clear()
-    b.set("female", True); b.set("female", False)              # the other room is used: music keeps playing, reminder over it
+    b.set("female", True)                                      # the other room is used: a message over the playing music
     assert sp.started.wait(2)
     assert wait_for(lambda: ["set_property", "volume", 30] in sent_commands(app))      # music ducked while talking
     sp.gate.set()
@@ -429,7 +452,7 @@ def test_a_second_message_is_skipped_while_one_is_being_spoken(app):
     svc, b, sp = talking(app, hold=True)
     b.set("male", True)
     assert sp.started.wait(2)
-    b.set("female", True); b.set("female", False)              # reminders while the welcome is still playing
+    assert b._say("another one") is False                      # while the welcome is still playing
     time.sleep(0.2)
     assert len(sp.said) == 1
     sp.gate.set()
@@ -462,7 +485,7 @@ def test_the_music_comes_back_up_gradually_after_a_message(app):
     sp.gate.set()
     assert wait_for(lambda: svc.player.snapshot()["playing"])
     sp.said.clear(); sp.started.clear(); sp.gate.clear()
-    b.set("female", True); b.set("female", False)
+    b.set("female", True)
     assert sp.started.wait(2)
     assert wait_for(lambda: mpv_volumes(app)[-1:] == [30])
     sp.gate.set()
@@ -477,12 +500,12 @@ def test_the_voice_is_not_quiet_when_a_message_arrives_mid_fade(app):
     b = svc.bathrooms
     b.speaker, b._speech_ok = lambda text: None, (lambda: True)
     b.set("male", False); b.set("female", False)
-    svc.settings.set("bathrooms", {"autoplay": True, "pins": {}, "fade": 2, "welcome": "", "reminder": "Mind the step"})
+    svc.settings.set("bathrooms", {"autoplay": True, "pins": {}, "fade": 2, "welcome": "", "reminder": "Mind the step", "reminder_delay": 0})
     b.set("male", True)
     assert wait_for(lambda: len(vols) >= 3 and vols[-1] < 40)  # the fade is under way and the volume is low
     seen = []
     b.speaker = lambda text: seen.append(svc.player.snapshot()["volume"])
-    b.set("female", True); b.set("female", False)              # the other door is used: a reminder, mid-fade
+    b.set("female", True)                                      # the other door closes: the reminder (no delay), mid-fade
     assert wait_for(lambda: seen)
     assert seen == [60]                                        # spoken at your volume, not the faded-down one
 
@@ -534,13 +557,13 @@ def test_changing_the_voice_prepares_the_messages_again(app, client, monkeypatch
     svc.bathrooms.preparer = lambda *t: got.append(t)
     svc.bathrooms._speech_ok = lambda: True
     assert post(client, {"voice": "espeak-ng"}).status_code == 200
-    assert wait_for(lambda: got and len(got[0]) == 2)
+    assert wait_for(lambda: got and len(got[0]) == 3)
 
 
 def test_the_saved_music_level_and_return_time_are_used(app):
     svc, b, sp = talking(app, duck=15, rise=6)
     calls = []
-    svc.player.duck = lambda on, level=None, up=None: calls.append((on, level, up))
+    svc.player.duck = lambda on, level=None, up=None, **kw: calls.append((on, level, up))
     svc.player.queue = [{"kind": "ytm", "id": "q1", "title": "One"}]
     b.set("male", True)
     assert wait_for(lambda: svc.player.snapshot()["playing"])
@@ -617,14 +640,84 @@ def test_your_own_volume_change_ends_the_fadeout_and_pauses(app):
     assert svc.player.snapshot()["volume"] == 25           # your value, not restored over
 
 
-def test_the_reminder_waits_for_the_fadeout(app):
-    svc, vols, _ = out_setup(app, fadeout=2, scale=0.4)    # an 0.8 second fade-out
-    b = svc.bathrooms
-    heard = []
-    b.speaker, b._speech_ok = (lambda t: heard.append((t, paused(svc)))), (lambda: True)
+# ---------- goodbye message and quiet idle music ----------
+def test_goodbye_is_spoken_when_a_door_opens(app):
+    svc, b, sp = talking(app, bye="See you soon", reminder_delay=3600)
+    b.set("male", True)
+    assert wait_for(lambda: len(sp.said) == 1)                 # the welcome
     b.set("male", False)
-    assert wait_for(lambda: heard)
-    assert heard == [("Please remember to flush and keep it clean.", True)]    # spoken once the music had paused
+    assert wait_for(lambda: sp.said[-1:] == ["See you soon"])
+    svc2, b2, sp2 = talking(app, bye="")                       # an empty goodbye is skipped
+    b2.set("male", True); b2.set("male", False)
+    time.sleep(0.2)
+    assert sp2.said == ["Thank you for choosing Cytron DJ. Enjoy the vibe!"]
+    svc3, b3, sp3 = talking(app, announce=False, bye="x")
+    b3.set("male", True); b3.set("male", False)
+    time.sleep(0.2)
+    assert sp3.said == []
+
+
+def test_bye_setting_default_and_preview(client, app):
+    assert doors(client)["bye"] == "Thank you for visiting. See you again soon!"
+    assert post(client, {"bye": "x" * 161}).status_code == 400
+    assert post(client, {"bye": "  Bye   now "}).status_code == 200 and doors(client)["bye"] == "Bye now"
+    svc, b, sp = talking(app, bye="Bye now")
+    assert post_to(client, "/api/doors/announce", {"which": "bye"}).status_code == 200
+    assert wait_for(lambda: sp.said == ["Bye now"])
+
+
+def test_idle_setting_validation(client):
+    assert post(client, {"idle": 50}).status_code == 200 and doors(client)["idle"] == 50
+    for bad in (-1, 101, "x", None):
+        assert post(client, {"idle": bad}).status_code == 400
+    assert doors(client)["idle"] == 50
+
+
+def test_music_keeps_playing_quietly_when_nobody_is_in(app):
+    svc, _ = setup_doors(app)
+    svc.settings.set("bathrooms", {"autoplay": True, "pins": {}, "fade": 0, "fadeout": 0, "idle": 30})
+    b = svc.bathrooms
+    svc.player.queue = [{"kind": "ytm", "id": "q1", "title": "One"}]
+    b.set("male", False); b.set("female", False)               # everyone out: a song still plays...
+    assert wait_for(lambda: svc.player.snapshot()["playing"])
+    assert wait_for(lambda: ["set_property", "volume", 30] in sent_commands(app))   # ...at 30 %
+    assert not paused(svc)
+    b.set("male", True)                                        # a visitor: back to full volume
+    assert wait_for(lambda: mpv_volumes(app)[-1:] == [100])
+    assert not paused(svc)
+    b.set("male", False)                                       # leaves: quiet again, still no pause
+    assert wait_for(lambda: mpv_volumes(app)[-1:] == [30])
+    assert not paused(svc) and svc.player.snapshot()["playing"]
+
+
+def test_idle_zero_pauses_as_before_and_idle_stops_after_hours(app):
+    svc, _ = setup_doors(app)
+    svc.settings.set("bathrooms", {"autoplay": True, "pins": {}, "fade": 0, "fadeout": 0, "idle": 0})
+    b = svc.bathrooms
+    svc.player.queue = [{"kind": "ytm", "id": "q1", "title": "One"}]
+    b.set("male", False); b.set("female", False); b.set("male", True)
+    assert wait_for(lambda: svc.player.snapshot()["playing"])
+    b.set("male", False)
+    assert wait_for(lambda: paused(svc))
+
+
+def test_no_idle_music_after_the_hours(app):
+    svc, _ = setup_doors(app, hour=22)                         # after the hours: nothing plays, idle or not
+    svc.settings.set("bathrooms", {"autoplay": True, "pins": {}, "fade": 0, "fadeout": 0, "idle": 30})
+    svc.player.queue = [{"kind": "ytm", "id": "q1", "title": "One"}]
+    svc.bathrooms.set("male", False)
+    time.sleep(0.3)
+    assert not svc.player.snapshot()["playing"]
+
+
+def test_a_message_over_idle_music_returns_to_the_idle_level(app):
+    svc, b, sp = talking(app, idle=30, bye="", welcome="Hi")
+    svc.player.queue = [{"kind": "ytm", "id": "q1", "title": "One"}]
+    b.evaluate()
+    assert wait_for(lambda: mpv_volumes(app)[-1:] == [30])
+    b._say("hello")
+    assert wait_for(lambda: mpv_volumes(app)[-1:] == [30])      # dips no lower than 30 and returns to 30, never to 100
+    assert 100 not in mpv_volumes(app)[mpv_volumes(app).index(30):]
 
 
 # ---------- speaking speed, message variants, {greeting} ----------

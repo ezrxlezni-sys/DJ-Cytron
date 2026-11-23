@@ -74,7 +74,7 @@ Range: 0 to 60 seconds, default 5. The Settings page offers Off or 3 to 60 secon
 
 When the **last door opens**, the music no longer cuts off: the volume falls to about 8 % over the *Fade out* time
 (default 3 seconds), the music pauses (live radio is silenced), and the volume is put back to your level, ready for
-the next visit's fade-in. The reminder is spoken after that, so it is never talked over by a dying track.
+the next visit's fade-in.
 
 - If someone closes a door again during the fade-out, it is cancelled and the music carries on at your volume.
 - If you move the volume slider during it, the music pauses at once and your value is kept.

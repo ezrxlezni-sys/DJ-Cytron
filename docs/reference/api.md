@@ -369,6 +369,7 @@ Change door sensor settings. Send only the fields you want to change; all are op
   "announce": true,
   "welcome": "Thank you for choosing Cytron DJ. Enjoy the vibe!",
   "reminder": "Please remember to flush and keep it clean.",
+  "reminder_delay": 60,
   "duck": 30,
   "rise": 2,
   "voice": ""
@@ -381,12 +382,15 @@ Change door sensor settings. Send only the fields you want to change; all are op
 | `autoplay` | Boolean. Turning it on while nobody is in and music is playing pauses it straight away. |
 | `from`, `to` | `"HH:MM"`, 24-hour. `from` later than `to` means an overnight range. |
 | `fade` | Whole seconds, 0-60 (default 5; 0 = off). When a door starts or resumes the music, the volume starts low and rises to its previous level over this time. |
-| `fadeout` | Whole seconds, 0-60 (default 3; 0 = off). When the last door opens, the volume falls to a low level over this time, the music pauses, and the volume is put back for the next visit. The reminder is spoken after it. |
+| `fadeout` | Whole seconds, 0-60 (default 3; 0 = off). When the last door opens, the volume falls to a low level over this time, the music pauses, and the volume is put back for the next visit. |
 | `announce` | Boolean (default `true`). Speak the messages below at the doors, inside the active hours. |
 | `duck` | Whole number 0-100 (default 30): the music's level in % while a message is spoken over it (100 = no dip). |
 | `rise` | Seconds, 0-30 (default 2): how long the music takes to return to full volume after a message (0 = instantly). |
 | `voice` | `""` (automatic) or one of the installed voices listed in `voices` (a Piper voice name such as `en_GB-alan-medium`, or `espeak-ng`). |
-| `welcome`, `reminder` | Text, at most 160 characters (extra spaces are collapsed); an empty string means "say nothing". Said when a door closes / opens. |
+| `welcome`, `reminder` | Text, at most 160 characters (extra spaces are collapsed); an empty string means "say nothing". The welcome is said when a door closes; the reminder `reminder_delay` seconds after the welcome ended. |
+| `bye` | Text like `welcome`: said when a door opens. |
+| `idle` | Whole percent, 0-100 (default 30). With autoplay on, inside the active hours and every door open, the music keeps playing at this level (mpv's own volume) instead of pausing; 0 = pause. |
+| `reminder_delay` | Whole seconds, 0-3600 (default 60). How long after the welcome the reminder is spoken, if that door is still closed. |
 
 Returns `{"ok": true}`; the new configuration arrives in the state stream. `400` with one of:
 `Pins must be numbers`, `Pins must be BCM GPIO numbers 2-27`, `Each room needs its own pin`,
@@ -400,7 +404,7 @@ a speech engine is installed and usable).
 
 ### POST /api/doors/announce
 
-Play a saved door message on the speakers (the Settings ▶ buttons): `{"which": "welcome"}` or `{"which": "reminder"}`.
+Play a saved door message on the speakers (the Settings ▶ buttons): `{"which": "welcome"}` or `{"which": "reminder"}` or `{"which": "bye"}`.
 Returns `{"ok": true}` straight away (the message plays in the background), or `400` with `Unknown message`,
 `That message is empty`, or `Speech needs a voice: pip install piper-tts (see docs/doors/announcements.md) or sudo apt install espeak-ng`.
 

@@ -10,12 +10,14 @@ Code: [piplayer/speech.py](../../piplayer/speech.py) (the voice) and [piplayer/b
 | Event | What is said (default text) |
 |---|---|
 | A door **closes** | "Thank you for choosing Cytron DJ. Enjoy the vibe!" Spoken first; if autoplay is on the music starts (and fades in) afterwards. |
-| A door **opens** | "Please remember to flush and keep it clean." If that was the last occupied door the music has already paused; otherwise it is spoken over the music, which dips to about 30 % while the message plays. |
+| A door **opens** | "Thank you for visiting. See you again soon!" Spoken over the music, which dips while it plays. |
+| A set **delay after the welcome** | "Please remember to flush and keep it clean." Spoken over the music, which dips to about 30 % while the message plays. Skipped if the door has opened again by then. |
 
 Rules:
 
 - Nothing is said at start-up or after rewiring the sensors.
 - Nothing is said outside the active hours, when the switch is off, or when that message is empty.
+- The wait starts when the welcome has finished. Closing a door again (or opening it) restarts the reminder's wait; each door has its own timer.
 - Only one message plays at a time (a message that arrives while another is playing is skipped).
 - If the speakers or the speech engine fail, the door logic carries on silently. Failures are written to the log.
 
@@ -82,6 +84,8 @@ The dip uses mpv's own volume, so it does not change the Pi's system volume or t
 | Music comes back | `rise` | 0 to 30 s (default 2; 0 = instantly) |
 | Welcome | `welcome` | up to 10 messages, one per line, each up to 160 characters (empty = say nothing) |
 | Reminder | `reminder` | same as the welcome |
+| Goodbye | `bye` | same as the welcome |
+| Reminder delay | `reminder_delay` | 0 to 3600 seconds (default 60). Settings shows it as minutes + seconds. How long after the welcome the reminder is said |
 
 With several lines, a different message is said each time (never the same one twice in a row). `{greeting}` in a
 message becomes "Good morning" (before 12:00), "Good afternoon" (before 18:00) or "Good evening". Every wording is

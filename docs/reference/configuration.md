@@ -70,6 +70,9 @@ Door and announcement settings, written by the Settings page. Edit by hand only 
 | `bathrooms.fade` | `5` | Seconds for the music to rise to your volume when a door starts it (`0` = off, max 60). |
 | `bathrooms.fadeout` | `3` | Seconds for the music to fade down before it pauses when the last door opens (`0` = off, max 60). |
 | `bathrooms.announce` | `true` | Speak at the doors. |
+| `bathrooms.idle` | 30 | Music level (%) while nobody is in; 0 = pause. |
+| `bathrooms.bye` | "Thank you for visiting. See you again soon!" | Spoken when a door opens. |
+| `bathrooms.reminder_delay` | 60 | Seconds after the welcome before the reminder is spoken (0-3600). |
 | `bathrooms.welcome`, `bathrooms.reminder` | "Thank you for choosing Cytron DJ. Enjoy the vibe!", "Please remember to flush and keep it clean." | The spoken messages (max 160 characters, empty = none). |
 | `bathrooms.duck` | `30` | Music level (%) while a message is spoken over it (100 = no dip). |
 | `bathrooms.rise` | `2` | Seconds for the music to return to full volume after a message (0 = instantly). |

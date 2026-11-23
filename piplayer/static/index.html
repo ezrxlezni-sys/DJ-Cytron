@@ -145,20 +145,28 @@
               <div class="hours"><select name="from" aria-label="From"></select><em>to</em><select name="to" aria-label="Until"></select></div></div>
             <div class="srow srow-hours" id="faderow" role="group" aria-label="Fade in"><span class="srow-text"><b>Fade in</b><small>When a door closing starts or resumes the music, raise the volume gradually instead of all at once.</small></span>
               <div class="hours"><select name="fade" aria-label="Fade-in time"></select></div></div>
-            <div class="srow srow-hours" id="fadeoutrow" role="group" aria-label="Fade out"><span class="srow-text"><b>Fade out</b><small>When the last door opens, lower the volume gradually before pausing. The reminder is spoken afterwards.</small></span>
+            <div class="srow srow-hours" id="idlerow" role="group" aria-label="Music when nobody is in"><span class="srow-text"><b>Music when nobody is in</b><small>Instead of pausing, keep the music playing quietly at this level when every door is open. It comes back up when a door closes.</small></span>
+              <div class="hours"><select name="idle" aria-label="Music level when nobody is in"></select></div></div>
+            <div class="srow srow-hours" id="fadeoutrow" role="group" aria-label="Fade out"><span class="srow-text"><b>Fade out</b><small>When the last door opens, lower the volume gradually (to the level above, or until it pauses).</small></span>
               <div class="hours"><select name="fadeout" aria-label="Fade-out time"></select></div></div>
           </div>
 
           <div class="sgroup" id="announcegroup">
             <div class="slabel">Announcements</div>
-            <label class="srow"><span class="srow-text"><b>Speak at the doors</b><small>A welcome when a door closes and a reminder when it opens. Only during the active hours. A welcome plays before the music starts.</small></span>
+            <label class="srow"><span class="srow-text"><b>Speak at the doors</b><small>A welcome when a door closes, a reminder after a delay and a goodbye when a door opens. Only during the active hours. A welcome plays before the music starts.</small></span>
               <input type="checkbox" name="announce" role="switch"></label>
             <div class="srow srow-msg srow-hours" id="welcomerow"><span class="srow-text"><b>Welcome</b><small>Said when a door closes. One message per line: a different one is said each time. <code>{greeting}</code> becomes Good morning, afternoon or evening. Leave empty for none.</small></span>
               <div class="msg"><textarea class="input" name="welcome" rows="2" autocomplete="off" spellcheck="true" aria-label="Welcome messages, one per line"></textarea>
                 <button class="btn outline sm icon" type="button" data-say="welcome" aria-label="Play a welcome message" title="Play"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11.04-6.86a1 1 0 0 0 0-1.72L9.5 4.28A1 1 0 0 0 8 5.14Z"/></svg></button></div></div>
-            <div class="srow srow-msg srow-hours" id="reminderrow"><span class="srow-text"><b>Reminder</b><small>Said when a door opens. One message per line, same as the welcome. Leave empty for none.</small></span>
+            <div class="srow srow-msg srow-hours" id="reminderrow"><span class="srow-text"><b>Reminder</b><small>Said a while after a door closes, if it is still closed. One message per line, same as the welcome. Leave empty for none.</small></span>
               <div class="msg"><textarea class="input" name="reminder" rows="2" autocomplete="off" spellcheck="true" aria-label="Reminder messages, one per line"></textarea>
                 <button class="btn outline sm icon" type="button" data-say="reminder" aria-label="Play a reminder message" title="Play"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11.04-6.86a1 1 0 0 0 0-1.72L9.5 4.28A1 1 0 0 0 8 5.14Z"/></svg></button></div></div>
+            <div class="srow srow-hours" id="delayrow" role="group" aria-label="Reminder delay"><span class="srow-text"><b>Delay after the welcome</b><small>How long after the welcome the reminder is said. 0 min 0 sec says it right after the welcome. Skipped if the door opens first.</small></span>
+              <div class="hours delay"><input class="input pin" name="delay_min" type="number" min="0" max="60" step="1" inputmode="numeric" aria-label="Reminder delay minutes"><em>min</em>
+                <input class="input pin" name="delay_sec" type="number" min="0" max="59" step="1" inputmode="numeric" aria-label="Reminder delay seconds"><em>sec</em></div></div>
+            <div class="srow srow-msg srow-hours" id="byerow"><span class="srow-text"><b>Goodbye</b><small>Said when a door opens. One message per line, same as the welcome. Leave empty for none.</small></span>
+              <div class="msg"><textarea class="input" name="bye" rows="2" autocomplete="off" spellcheck="true" aria-label="Goodbye messages, one per line"></textarea>
+                <button class="btn outline sm icon" type="button" data-say="bye" aria-label="Play a goodbye message" title="Play"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11.04-6.86a1 1 0 0 0 0-1.72L9.5 4.28A1 1 0 0 0 8 5.14Z"/></svg></button></div></div>
           </div>
 
           <div class="sgroup" id="voicegroup">

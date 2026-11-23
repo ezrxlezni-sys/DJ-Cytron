@@ -444,15 +444,17 @@ class Player:
     DUCK_STEPS = 12
     DUCK_SCALE = 1.0                          # tests shrink this
 
-    def duck(self, on=True, level=None, up=None):
+    def duck(self, on=True, level=None, up=None, down=None, rest=100):
         """Lower the music (mpv's own volume, not the system volume) so a spoken message is clear, then raise it back
         GRADUALLY. The system volume stays untouched, so this never fights the volume slider or the door fade-in.
-        A new duck() call takes over from wherever the previous one had got to."""
+        A new duck() call takes over from wherever the previous one had got to.
+        `down` / `up`: seconds to go down / come back (default: quick dip, slow return); `rest`: the level to come back to."""
         with self.lock:
             self._duck_gen = getattr(self, "_duck_gen", 0) + 1
             gen, start = self._duck_gen, getattr(self, "_duck_now", 100)
         level = self.DUCK_LEVEL if level is None else max(0, min(100, int(level)))     # how far the music dips (%)
-        goal, secs = (level, self.DUCK_DOWN) if on else (100, self.DUCK_UP if up is None else up)    # up: seconds to come back
+        rest = max(0, min(100, int(rest)))
+        goal, secs = (level, self.DUCK_DOWN if down is None else down) if on else (rest, self.DUCK_UP if up is None else up)
         threading.Thread(target=self._duck_ramp, args=(gen, start, goal, secs * self.DUCK_SCALE),
                          daemon=True, name="duck").start()
 

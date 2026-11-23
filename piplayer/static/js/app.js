@@ -187,6 +187,8 @@ for (const s of [0, 3, 5, 10, 15, 30, 60]) doorForm.fade.append(new Option(s ? s
 enhanceSelect(doorForm.fade);
 for (const s of [0, 1, 2, 3, 5, 10, 15]) doorForm.fadeout.append(new Option(s ? s + (s === 1 ? ' second' : ' seconds') : 'Off', String(s)));
 enhanceSelect(doorForm.fadeout);
+for (const [v, t] of [[0, 'Pause (silent)'], [15, 'Very quiet (15%)'], [30, 'Quiet (30%)'], [50, 'Half (50%)']]) doorForm.idle.append(new Option(t, String(v)));
+enhanceSelect(doorForm.idle);
 for (const [v, t] of [[100, 'No dip'], [70, 'Slightly lower (70%)'], [50, 'Half (50%)'], [30, 'Quiet (30%)'], [15, 'Very quiet (15%)'], [0, 'Silent']]) doorForm.duck.append(new Option(t, String(v)));
 for (const s of [0, 1, 2, 4, 8]) doorForm.rise.append(new Option(s ? s + (s === 1 ? ' second' : ' seconds') : 'Instantly', String(s)));
 enhanceSelect(doorForm.duck); enhanceSelect(doorForm.rise); enhanceSelect(doorForm.voice);
@@ -203,8 +205,8 @@ const paintSpeed = () => { fill(doorForm.speed); $('#speedval').textContent = Nu
 doorForm.speed.addEventListener('input', paintSpeed);
 function showDoorErr(msg) { const e = $('#doorerr'); e.textContent = msg || ''; e.hidden = !msg }
 const hoursDim = () => {
-  ['#hoursrow', '#faderow', '#fadeoutrow'].forEach(id => $(id).classList.toggle('off', !doorForm.autoplay.checked));
-  ['#welcomerow', '#reminderrow', '#voicerow', '#speedrow', '#duckrow', '#risesrow'].forEach(id => $(id).classList.toggle('off', !doorForm.announce.checked));
+  ['#hoursrow', '#faderow', '#idlerow', '#fadeoutrow'].forEach(id => $(id).classList.toggle('off', !doorForm.autoplay.checked));
+  ['#welcomerow', '#reminderrow', '#byerow', '#delayrow', '#voicerow', '#speedrow', '#duckrow', '#risesrow'].forEach(id => $(id).classList.toggle('off', !doorForm.announce.checked));
 };
 doorForm.autoplay.addEventListener('change', hoursDim);
 doorForm.announce.addEventListener('change', hoursDim);
@@ -219,20 +221,22 @@ function paintDoors(force) {
   f.male.value = d.pins.male ?? ''; f.female.value = d.pins.female ?? '';
   f.autoplay.checked = d.autoplay; f.from.value = d.from; f.to.value = d.to; f.fade.value = String(d.fade ?? 5); f.fadeout.value = String(d.fadeout ?? 3);
   paintVoices(d); f.speed.value = String(d.speed ?? 1); paintSpeed(); f.duck.value = String(d.duck ?? 30); f.rise.value = String(d.rise ?? 2);
-  f.announce.checked = d.announce !== false; f.welcome.value = d.welcome ?? ''; f.reminder.value = d.reminder ?? '';
+  f.announce.checked = d.announce !== false; f.welcome.value = d.welcome ?? ''; f.reminder.value = d.reminder ?? ''; f.bye.value = d.bye ?? ''; f.idle.value = String(d.idle ?? 30);
+  const rd = d.reminder_delay ?? 60; f.delay_min.value = String(Math.floor(rd / 60)); f.delay_sec.value = String(rd % 60);
   $('#speecherr').hidden = d.speech !== false;                   // shown only while the speech engine is missing
   hoursDim();
   $$('.sel').forEach(s => s.sync());
 }
 // auto-save: selects/switch save at once, pin numbers once you leave the field (debounced)
 let saveTimer = 0, saveSeq = 0;
+const delaySecs = () => Math.max(0, Math.floor(Number(doorForm.delay_min.value) || 0)) * 60 + Math.max(0, Math.floor(Number(doorForm.delay_sec.value) || 0));
 async function saveDoors() {
   clearTimeout(saveTimer);
   const f = doorForm, num = v => v === '' ? null : Number(v), seq = ++saveSeq;
   showDoorErr();
   const r = await api('doors', 'POST', {pins: {male: num(f.male.value), female: num(f.female.value)},
     autoplay: f.autoplay.checked, from: f.from.value, to: f.to.value, fade: Number(f.fade.value), fadeout: Number(f.fadeout.value), duck: Number(f.duck.value), rise: Number(f.rise.value), voice: f.voice.value, speed: Number(f.speed.value),
-    announce: f.announce.checked, welcome: f.welcome.value, reminder: f.reminder.value}).catch(() => ({error: 'Request failed'}));
+    announce: f.announce.checked, welcome: f.welcome.value, reminder: f.reminder.value, reminder_delay: delaySecs(), bye: f.bye.value, idle: Number(f.idle.value)}).catch(() => ({error: 'Request failed'}));
   if (seq !== saveSeq) return;                                       // a newer save is in flight
   if (r.error) return showDoorErr(r.error);
   toast('Saved');
